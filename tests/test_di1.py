@@ -89,7 +89,9 @@ def test_interpolar_taxas_permite_taxa_fechamento(monkeypatch: pytest.MonkeyPatc
 def test_interpolar_taxas_retorna_nulo_quando_fechamento_nao_tem_vertice(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    monkeypatch.setattr(di1, "buscar_historico_cacheado", _historico_di1_fechamento_nulo)
+    monkeypatch.setattr(
+        di1, "buscar_historico_cacheado", _historico_di1_fechamento_nulo
+    )
 
     taxas = di1.interpolar_taxas(
         "02-01-2025",

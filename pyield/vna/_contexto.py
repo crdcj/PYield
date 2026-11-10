@@ -134,7 +134,9 @@ def contexto(
         A situação e as pendências dependem dos dados publicados na consulta:
 
         >>> parametros = yd.vna.contexto(
-        ...     "NTN-C", yd.hoje(), vencimento="01-01-2031",
+        ...     "NTN-C",
+        ...     yd.hoje(),
+        ...     vencimento="01-01-2031",
         ...     inflacao_projetada="0,45%",
         ... )
         >>> situacao = parametros.item(0, "situacao_inflacao")

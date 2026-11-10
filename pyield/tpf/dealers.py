@@ -46,15 +46,12 @@ def _parsear_dealers(dados: dict) -> pl.DataFrame:
 
 def _processar_dealers(df: pl.DataFrame) -> pl.DataFrame:
     """Renomeia, tipa e ordena os dados de dealers."""
-    return (
-        df.select(
-            inicio_periodo=pl.col("INICIO_PERIODO").str.to_date(),
-            fim_periodo=pl.col("FIM_PERIODO").str.to_date(),
-            cnpj=pl.col("CNPJ").str.strip_chars(),
-            instituicao=pl.col("DEALER").str.strip_chars(),
-        )
-        .sort("inicio_periodo", "instituicao", descending=[True, False])
-    )
+    return df.select(
+        inicio_periodo=pl.col("INICIO_PERIODO").str.to_date(),
+        fim_periodo=pl.col("FIM_PERIODO").str.to_date(),
+        cnpj=pl.col("CNPJ").str.strip_chars(),
+        instituicao=pl.col("DEALER").str.strip_chars(),
+    ).sort("inicio_periodo", "instituicao", descending=[True, False])
 
 
 def dealers(data: DateLike | None = None) -> pl.DataFrame:

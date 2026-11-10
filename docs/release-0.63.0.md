@@ -46,9 +46,7 @@ import polars as pl
 import pyield as yd
 
 serie = yd.selic.over_serie(ultimos=5)
-serie_compativel = serie.with_columns(
-    taxa=pl.col("taxa").cast(pl.Decimal(18, 10))
-)
+serie_compativel = serie.with_columns(taxa=pl.col("taxa").cast(pl.Decimal(18, 10)))
 ```
 
 Esse cast acrescenta zeros à representação; não aumenta a precisão da fonte

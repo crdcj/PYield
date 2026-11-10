@@ -65,9 +65,7 @@ def test_ultimos_tem_prioridade():
     resultado = yd.igpm.indice_serie("invalida", "invalida", ultimos=1)
 
     assert resultado.schema == _ESQUEMA
-    assert resultado.to_dicts() == [
-        {"periodo": 202609, "indice": Decimal("1225.846")}
-    ]
+    assert resultado.to_dicts() == [{"periodo": 202609, "indice": Decimal("1225.846")}]
 
 
 def test_serie_omite_competencias_anteriores_ao_corte():

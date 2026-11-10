@@ -87,7 +87,7 @@ lista vigente na versão instalada:
 
 ```python
 yd.du.contar("20-11-2024", "21-11-2024", calendario="anterior")  # -> 1
-yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")     # -> 0
+yd.du.contar("20-11-2024", "21-11-2024", calendario="atual")  # -> 0
 ```
 
 Os parâmetros opcionais usam termos em português. `ajuste` define como tratar uma

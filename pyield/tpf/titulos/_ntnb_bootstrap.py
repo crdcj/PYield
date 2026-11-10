@@ -263,6 +263,8 @@ def taxas_zero(
             vazio quando não restarem vencimentos posteriores à liquidação.
 
     Raises:
+        ValueError: Se vencimentos e taxas tiverem tamanhos diferentes ou se
+            um mesmo vencimento aparecer com taxas diferentes.
         RuntimeError: Se não for possível encontrar um intervalo válido para
             alguma taxa forward, ocorrer valor não finito na avaliação ou
             a bisseção não convergir.

@@ -399,9 +399,7 @@ def selic_over(data: DateLike, *, anualizada: bool = True) -> Decimal:
     """
     if any_is_empty(data):
         return Decimal("NaN")
-    return _extrair_escalar(
-        selic_over_serie(data, data, anualizada=anualizada), "taxa"
-    )
+    return _extrair_escalar(selic_over_serie(data, data, anualizada=anualizada), "taxa")
 
 
 # ── SELIC Meta ───────────────────────────────────────────────────────

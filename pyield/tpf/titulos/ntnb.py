@@ -460,6 +460,10 @@ def implicitas(  # noqa: PLR0913
     Returns:
         pl.DataFrame: DataFrame com as taxas calculadas.
 
+    Raises:
+        ValueError: Se vencimentos e taxas tiverem tamanhos diferentes ou se
+            um mesmo vencimento aparecer com taxas diferentes.
+
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.

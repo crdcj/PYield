@@ -30,9 +30,9 @@ def _preparar_titulos(
         raise ValueError(
             "Datas e taxas devem ser válidas, com taxas finitas acima de -1."
         )
-    df = df.filter(pl.col("data_vencimento") > liquidacao)
+    df = df.filter(pl.col("data_vencimento") > liquidacao).unique(maintain_order=True)
     if df["data_vencimento"].n_unique() != df.height:
-        raise ValueError(f"Vencimentos duplicados de {titulo}.")
+        raise ValueError(f"Vencimentos duplicados de {titulo} com taxas diferentes.")
     return df.with_columns(titulo=pl.lit(titulo))
 
 
@@ -125,8 +125,9 @@ def taxas_zero_forwards(  # noqa: PLR0913, PLR0917
         - taxa_zero (Float64): Taxa zero nominal anual em formato decimal.
 
     Raises:
-        ValueError: Entradas inválidas, vencimentos duplicados na mesma família,
-            prazos úteis coincidentes ou preço incompatível com a curva anterior.
+        ValueError: Entradas inválidas, vencimentos duplicados com taxas
+            diferentes na mesma família, prazos úteis coincidentes ou preço
+            incompatível com a curva anterior.
         RuntimeError: Falha na calibração numérica.
 
     Notes:

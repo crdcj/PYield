@@ -27,6 +27,7 @@ Antes de editar:
 
 Use `uv run` para comandos de projeto:
 - `uv run pytest ...` para testes;
+- `uv run ruff format ...` para formatação (inclui blocos de código em Markdown);
 - `uv run ruff check ...` para lint;
 - `uv run ty check` para tipos;
 - `uv run zensical build --clean --strict` para gerar e validar a documentação.
@@ -34,6 +35,10 @@ Use `uv run` para comandos de projeto:
 Para visualizar e publicar a documentação, siga a seção
 [Documentação](docs/desenvolvimento.md#documentação), que mantém o procedimento e a
 configuração do GitHub Pages.
+
+Toda alteração em `.py` ou `.md` deve terminar com `uv run ruff format` e
+`uv run ruff check` limpos nos arquivos tocados. Isso é padrão do projeto, não
+etapa opcional.
 
 Rode verificações focadas no que você alterou. Amplie para a suíte inteira quando
 a mudança afetar contratos transversais, API pública ou parsing compartilhado.

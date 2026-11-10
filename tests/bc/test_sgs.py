@@ -392,7 +392,9 @@ def test_sgs_ausencia_preserva_contrato_decimal(
     assert historico.schema == {"data": pl.Date, coluna: pl.Decimal(18, escala)}
 
 
-@pytest.mark.parametrize("consultar", [yd.selic.over, yd.selic.meta, yd.ptax, yd.di_over])
+@pytest.mark.parametrize(
+    "consultar", [yd.selic.over, yd.selic.meta, yd.ptax, yd.di_over]
+)
 def test_sgs_entrada_vazia_retorna_decimal_nan_sem_consultar(monkeypatch, consultar):
     def falhar_se_chamada(_url):
         pytest.fail("Entrada vazia não deve consultar a API.")

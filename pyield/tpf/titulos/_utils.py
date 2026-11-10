@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 import math
 import re
 from collections.abc import Callable
@@ -7,9 +8,11 @@ from decimal import Decimal, InvalidOperation
 import polars as pl
 
 import pyield._internal.converters as conversores
-from pyield._internal.numbers import truncar
-from pyield._internal.types import DateLike, any_is_empty
+from pyield._internal.numbers import truncar, truncar_decimal
+from pyield._internal.types import ArrayLike, DateLike, any_is_empty
 from pyield.tpf._taxas import TipoTPF
+
+logger = logging.getLogger(__name__)
 
 COLUNAS_DADOS_TPF = (
     "data_referencia",
@@ -44,8 +47,75 @@ def adicionar_taxa_di(df: pl.DataFrame, data_ref: DateLike) -> pl.DataFrame:
         extrapolar=True,
     )
     if taxas_di.is_empty():
-        return df
+        return df.with_columns(taxa_di=pl.lit(None, dtype=pl.Float64))
     return df.with_columns(taxa_di=taxas_di)
+
+
+def filtrar_vertices_futuros(
+    liquidacao: dt.date,
+    vencimentos: pl.Series,
+    taxas: ArrayLike,
+    nome_curva: str,
+) -> tuple[pl.Series, pl.Series]:
+    """Remove vértices sem prazo preservando o alinhamento com as taxas.
+
+    Vencimentos repetidos com a mesma taxa são considerados uma única vez. O
+    mesmo vencimento com taxas diferentes gera erro, pois não há taxa correta
+    a escolher.
+    """
+    if len(vencimentos) != len(taxas):
+        raise ValueError(
+            f"Vencimentos e taxas de {nome_curva} devem ter o mesmo tamanho."
+        )
+
+    df = pl.DataFrame(
+        {"data_vencimento": vencimentos, "taxa": taxas},
+        schema={"data_vencimento": pl.Date, "taxa": pl.Float64},
+    ).filter(pl.col("data_vencimento") > liquidacao)
+
+    removidos = len(vencimentos) - df.height
+    if removidos > 0:
+        logger.warning(
+            "Vencimentos de %s menores ou iguais à liquidação foram ignorados: "
+            "%s removidos.",
+            nome_curva,
+            removidos,
+        )
+
+    df = df.unique(maintain_order=True)
+    if df["data_vencimento"].n_unique() != df.height:
+        raise ValueError(
+            f"Vencimentos duplicados de {nome_curva} com taxas diferentes."
+        )
+    return df["data_vencimento"], df["taxa"]
+
+
+def rejeitar_prazos_conflitantes(curva: pl.DataFrame) -> pl.DataFrame:
+    """Remove vértices repetidos e rejeita prazos com taxas diferentes.
+
+    Linhas idênticas não são ambíguas e são mantidas uma única vez. Um mesmo
+    prazo com taxas diferentes não tem taxa correta a escolher, então gera
+    erro em vez de depender da ordem das linhas.
+    """
+    curva = curva.unique(maintain_order=True)
+    if curva["dias_uteis"].n_unique() != curva.height:
+        raise ValueError(
+            "Curva zero não pode conter o mesmo prazo com taxas diferentes."
+        )
+    return curva
+
+
+def validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
+    """Valida e normaliza a curva zero usada na precificação."""
+    if not {"dias_uteis", "taxa_zero"}.issubset(curva_zero.columns):
+        raise ValueError(
+            "Curva zero deve conter as colunas 'dias_uteis' e 'taxa_zero'."
+        )
+    curva = curva_zero.select(
+        pl.col("dias_uteis").cast(pl.Int64),
+        pl.col("taxa_zero").cast(pl.Float64),
+    ).drop_nulls()
+    return rejeitar_prazos_conflitantes(curva).sort("dias_uteis")
 
 
 def coluna_ou_expr(valor: pl.Expr | str, nome: str) -> pl.Expr:
@@ -90,31 +160,13 @@ def gerar_datas_pagamento(
     ).sort()
 
 
-def adicionar_duration(
-    df: pl.DataFrame,
-    funcao_duration: Callable[[dt.date, dt.date, float], float],
-) -> pl.DataFrame:
-    """Adiciona `duration` e `prazo_medio` ao DataFrame.
-
-    Calcula a Macaulay Duration via ``funcao_duration`` (row-wise) e define
-    `prazo_medio` igual a `duration`.
-    """
-    return df.with_columns(
-        duration=pl.struct(
-            "data_referencia", "data_vencimento", "taxa_indicativa"
-        ).map_elements(
-            lambda s: funcao_duration(
-                s["data_referencia"], s["data_vencimento"], s["taxa_indicativa"]
-            ),
-            return_dtype=pl.Float64,
-        ),
-    ).with_columns(prazo_medio=pl.col("duration"))
-
-
-def adicionar_dv01(df: pl.DataFrame) -> pl.DataFrame:
-    """Adiciona `dv01` ao DataFrame. Requer coluna `duration`."""
-    expr_duracao_mod = pl.col("duration") / (1 + pl.col("taxa_indicativa"))
-    return df.with_columns(dv01=0.0001 * expr_duracao_mod * pl.col("pu"))
+def pu_por_vna(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
+    """Calcula o PU pelo VNA truncado em 6 casas e a cotação em 4 casas."""
+    if any_is_empty(vna, cotacao):
+        return Decimal("NaN")
+    vna_decimal = truncar_decimal(vna, 6)
+    cotacao_decimal = truncar_decimal(cotacao, 4)
+    return truncar_decimal(vna_decimal * cotacao_decimal / 100, 6)
 
 
 def converter_taxa(taxa: float | Decimal | str) -> float | Decimal:

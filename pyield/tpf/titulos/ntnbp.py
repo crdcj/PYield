@@ -110,24 +110,6 @@ def pu(vna: float | Decimal, cotacao: float | Decimal) -> Decimal:
     return _utils.pu_por_vna(vna, cotacao)
 
 
-def _normalizar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
-    """Valida e normaliza a curva zero usada na precificação."""
-    colunas_necessarias = {"dias_uteis", "taxa_zero"}
-    if not colunas_necessarias.issubset(curva_zero.columns):
-        raise ValueError(
-            "Curva zero deve conter as colunas 'dias_uteis' e 'taxa_zero'."
-        )
-
-    return (
-        curva_zero.select(
-            pl.col("dias_uteis").cast(pl.Int64),
-            pl.col("taxa_zero").cast(pl.Float64),
-        )
-        .drop_nulls()
-        .sort("dias_uteis")
-    )
-
-
 def taxa(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
@@ -155,6 +137,10 @@ def taxa(
     Returns:
         float: TIR anualizada em formato decimal, sem arredondamento.
             Retorna ``NaN`` se a liquidação for igual ou posterior ao vencimento.
+
+    Raises:
+        ValueError: Se faltarem as colunas ``dias_uteis`` e ``taxa_zero`` ou
+            se um mesmo prazo aparecer com taxas diferentes.
     """
     if any_is_empty(data_liquidacao, data_vencimento):
         return float("nan")
@@ -163,7 +149,7 @@ def taxa(
     if dias_uteis <= 0:
         return float("nan")
 
-    curva = _normalizar_curva_zero(curva_zero)
+    curva = _utils.validar_curva_zero(curva_zero)
     return interpolador.Interpolador(
         curva["dias_uteis"],
         curva["taxa_zero"],

@@ -28,7 +28,9 @@ historico = yd.vna.historico("NTN-C", vencimento="01-01-2031")
 valor = yd.vna.valor("NTN-B", "15-12-2025")
 projecao_ntnb = yd.vna.projetado("NTN-B", "30-06-2026", 4731.856412, "0.45%")
 projecao_lft = yd.vna.projetado(
-    "LFT", "18-09-2026", 19905.773236,
+    "LFT",
+    "18-09-2026",
+    19905.773236,
     selic="13.65%",
 )
 ```
@@ -107,9 +109,8 @@ assert nova_base == yd.vna.valor("NTN-B", "15-08-2026")
 
 ```python
 indice_atual = 1225.846  # Pode ser obtido com yd.igpm.indice("01-09-2026")
-nova_base = yd.vna.calcular_base(
-    "NTN-C", indice_atual, vencimento="01-01-2031",  # 01/10/2026
-)
+# Base de 01/10/2026
+nova_base = yd.vna.calcular_base("NTN-C", indice_atual, vencimento="01-01-2031")
 # Decimal('6671.452284')
 assert nova_base == yd.vna.valor("NTN-C", "01-10-2026", "01-01-2031")
 ```
@@ -229,7 +230,9 @@ Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
 contexto_ntnc = yd.vna.contexto(
-    "NTN-C", "15-06-2026", vencimento="01-01-2031",
+    "NTN-C",
+    "15-06-2026",
+    vencimento="01-01-2031",
 )
 ```
 
@@ -256,7 +259,10 @@ diretamente na fonte.
 ```python
 contexto = yd.vna.contexto("NTN-B", "30-06-2026")
 indices = contexto.select(
-    "competencia_anterior", "competencia", "indice_anterior", "indice_atual",
+    "competencia_anterior",
+    "competencia",
+    "indice_anterior",
+    "indice_atual",
 ).row(0)
 # (datetime.date(2026, 5, 1), datetime.date(2026, 6, 1),
 #  Decimal('7640.15'), Decimal('7652.37'))
@@ -311,7 +317,9 @@ que o índice já foi publicado. Por exemplo, para NTN-C:
 ```python
 data_operacao = yd.hoje()
 contexto = yd.vna.contexto(
-    "NTN-C", data_operacao, vencimento="01-01-2031",
+    "NTN-C",
+    data_operacao,
+    vencimento="01-01-2031",
     inflacao_projetada="0,45%",
 )
 agenda = yd.igpm.calendario(contexto.item(0, "competencia").year)

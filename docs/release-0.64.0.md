@@ -61,3 +61,47 @@ df = yd.tpf.secundario.mensal("07-01-2025").with_columns(
     pl.col("taxa_minima", "taxa_media", "taxa_maxima") * 100
 )
 ```
+
+## `nome_comercial` obrigatório em `yd.ntnb1.dv01`
+
+`yd.ntnb1.dv01` deixa de assumir Renda+ quando `nome_comercial` não é
+informado, como as demais funções de `yd.ntnb1`. Antes, um Educa+ calculado
+sem o argumento retornava o DV01 do Renda+ sem erro. Agora a omissão gera
+`TypeError`.
+
+### Migração
+
+Informe o nome comercial explicitamente:
+
+```python
+r_mais = yd.ntnb1.NomeComercial.RENDA_MAIS
+
+# 0.63.0
+dv01 = yd.ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu)
+
+# 0.64.0
+dv01 = yd.ntnb1.dv01("23-06-2025", "15-12-2084", "6.86%", pu, r_mais)
+```
+
+## Prazos repetidos na curva zero
+
+As funções de NTN-B Principal, NTN-B1 e NTN-C que recebem `curva_zero`
+(`yd.ntnbp.taxa`, `yd.ntnb1.cotacao_curva_zero`, `yd.ntnb1.taxa_curva_zero`,
+`yd.ntnc.cotacao_curva_zero` e `yd.ntnc.taxa_curva_zero`) passam a tratar
+prazos repetidos da mesma forma:
+
+- linhas idênticas são aceitas e consideradas uma única vez;
+- o mesmo `dias_uteis` com taxas diferentes gera `ValueError`.
+
+Antes, NTN-B Principal e NTN-B1 usavam a última linha de cada prazo, e o
+resultado dependia da ordem da curva. A NTN-C rejeitava qualquer repetição,
+mesmo com taxas iguais. Curvas geradas por `yd.ntnb.taxas_zero` não têm prazos
+repetidos e não são afetadas.
+
+O mesmo critério vale para os vértices informados aos bootstraps
+`yd.ntnf.taxas_zero`, `yd.ntnf.taxas_zero_forwards` e `yd.ntnb.taxas_zero`
+(também usado por `yd.ntnb.implicitas`). Antes, `yd.ntnf.taxas_zero` aceitava
+o mesmo vencimento com taxas diferentes e o resultado dependia da ordem dos
+vértices; `yd.ntnb.taxas_zero` repetia o vértice na saída ou falhava com
+`RuntimeError`; e `yd.ntnf.taxas_zero_forwards` rejeitava até repetições
+idênticas.

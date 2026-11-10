@@ -69,11 +69,17 @@ def relatorios_locais(monkeypatch, dados):
 
 def _vna(fator, casas_fator=16):
     with localcontext(prec=28):
-        acumulado = fator.quantize(Decimal(1).scaleb(-casas_fator), rounding=ROUND_HALF_UP)
-        return (Decimal(1000) * acumulado).quantize(Decimal("1e-6"), rounding=ROUND_DOWN)
+        acumulado = fator.quantize(
+            Decimal(1).scaleb(-casas_fator), rounding=ROUND_HALF_UP
+        )
+        return (Decimal(1000) * acumulado).quantize(
+            Decimal("1e-6"), rounding=ROUND_DOWN
+        )
 
 
-@pytest.mark.parametrize("arquivo", ARQUIVOS, ids=lambda nome: nome.removesuffix(".txt"))
+@pytest.mark.parametrize(
+    "arquivo", ARQUIVOS, ids=lambda nome: nome.removesuffix(".txt")
+)
 def test_produtorio_desde_a_origem_reproduz_vna_publicado(arquivo, acumulacao, dados):
     taxas, fatores, _ = acumulacao
     data_arquivo = dt.datetime.strptime(arquivo[:8], "%Y%m%d").date()

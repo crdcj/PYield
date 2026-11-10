@@ -352,8 +352,7 @@ def _pagamentos_curva_zero(
         raise ValueError(
             "Curva deve ter prazos inteiros positivos e taxas finitas > -1."
         )
-    if curva["dias_uteis"].n_unique() != curva.height:
-        raise ValueError("Curva zero não pode conter prazos duplicados.")
+    curva = _utils.rejeitar_prazos_conflitantes(curva)
 
     fluxos = fluxos_caixa(data_liquidacao, data_vencimento)
     dias = du.contar(data_liquidacao, fluxos["data_pagamento"])
@@ -383,7 +382,8 @@ def cotacao_curva_zero(
             datas ausentes, ausência de fluxos ou resultado não finito.
 
     Raises:
-        ValueError: Curva vazia, colunas ausentes ou vértices inválidos.
+        ValueError: Curva vazia, colunas ausentes, vértices inválidos ou um
+            mesmo prazo com taxas diferentes.
 
     Notes:
         A cotação pela curva zero é:
@@ -447,7 +447,8 @@ def taxa_curva_zero(
             resultado não finito ou falha de convergência.
 
     Raises:
-        ValueError: Curva vazia, colunas ausentes ou vértices inválidos.
+        ValueError: Curva vazia, colunas ausentes, vértices inválidos ou um
+            mesmo prazo com taxas diferentes.
 
     Notes:
         A TIR equivalente \(y\), anual efetiva, em decimal e na base de

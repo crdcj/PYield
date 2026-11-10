@@ -83,15 +83,11 @@ def test_taxa_publica_propaga_falha_e_preserva_ausencia(titulo):
 
 def test_ntnb_forward_fora_do_intervalo():
     with pytest.raises(RuntimeError, match="intervalo"):
-        yd.ntnb.taxas_zero(
-            "21-03-2025", ["15-05-2026", "15-05-2035"], [0.1, -0.995]
-        )
+        yd.ntnb.taxas_zero("21-03-2025", ["15-05-2026", "15-05-2035"], [0.1, -0.995])
 
 
 def test_ntnb1_taxa_fora_do_intervalo():
-    curva = pl.DataFrame(
-        {"dias_uteis": [1, 30000], "taxa_zero": [-0.995, -0.995]}
-    )
+    curva = pl.DataFrame({"dias_uteis": [1, 30000], "taxa_zero": [-0.995, -0.995]})
     assert math.isnan(
         yd.ntnb1.taxa_curva_zero(
             "23-06-2025", "15-12-2084", curva, yd.ntnb1.NomeComercial.RENDA_MAIS
@@ -103,9 +99,7 @@ def test_ntnb1_taxa_fora_do_intervalo():
 def test_bootstrap_ntnb_rejeita_falha_do_solver(monkeypatch, valor):
     monkeypatch.setattr(utils, "encontrar_raiz", lambda *args, **kwargs: valor)
     with pytest.raises(RuntimeError, match="calibrar a NTN-B"):
-        yd.ntnb.taxas_zero(
-            "21-03-2025", ["15-05-2026", "15-05-2035"], [0.1, 0.11]
-        )
+        yd.ntnb.taxas_zero("21-03-2025", ["15-05-2026", "15-05-2035"], [0.1, 0.11])
 
 
 def test_solver_propaga_erro_inesperado():

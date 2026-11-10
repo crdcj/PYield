@@ -59,7 +59,9 @@ def test_registra_divergencia_da_publicacao_em_fevereiro_2014():
 
 def test_base_anterior_truncada_perde_precisao():
     anterior = REFERENCIAS.filter(pl.col("data") == dt.date(2000, 9, 15)).item(0, "vna")
-    publicado = REFERENCIAS.filter(pl.col("data") == dt.date(2000, 10, 15)).item(0, "vna")
+    publicado = REFERENCIAS.filter(pl.col("data") == dt.date(2000, 10, 15)).item(
+        0, "vna"
+    )
 
     calculado = calculo.calcular_base(anterior, INDICES["200008"], INDICES["200009"])
 

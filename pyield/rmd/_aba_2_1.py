@@ -1,6 +1,5 @@
 """Parser da aba 2.1 do RMD."""
 
-
 import polars as pl
 
 from pyield._internal.excel import ler_sem_cabecalho

@@ -38,7 +38,9 @@ def test_calculo_publico_reproduz_toda_a_serie_ntnc(indices, vencimento, emissao
         indice_base = indices[200006]
         if emissao.day != 1:
             # A emissão de 03/12/1999 tem 29 dias de atualização em dezembro.
-            expoente = (Decimal(29) / 31).quantize(Decimal("1e-14"), rounding=ROUND_DOWN)
+            expoente = (Decimal(29) / 31).quantize(
+                Decimal("1e-14"), rounding=ROUND_DOWN
+            )
             fator_inicial = (indices[199912] / indices[199911]) ** expoente
             indice_base = indices[199912]
 

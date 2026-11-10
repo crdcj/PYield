@@ -298,7 +298,9 @@ def test_contexto_indices_igpm_preservam_escala_e_competencias(
     if indice_anterior is None:
         assert linha["indice_anterior"] is None
     else:
-        assert linha["indice_anterior"].as_tuple() == Decimal(indice_anterior).as_tuple()
+        assert (
+            linha["indice_anterior"].as_tuple() == Decimal(indice_anterior).as_tuple()
+        )
     if indice_atual is None:
         assert linha["indice_atual"] is None
     else:

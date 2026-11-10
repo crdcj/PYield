@@ -432,6 +432,10 @@ def taxas_zero(  # noqa
         pl.DataFrame: DataFrame com colunas `data_vencimento`, `dias_uteis`
             e `taxa_zero`.
 
+    Raises:
+        ValueError: Se vencimentos e taxas tiverem tamanhos diferentes ou se
+            um mesmo vencimento aparecer com taxas diferentes.
+
     Output Columns:
         - data_vencimento (Date): Data de vencimento.
         - dias_uteis (Int64): Dias úteis entre liquidação e vencimento.

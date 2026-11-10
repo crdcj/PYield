@@ -268,25 +268,6 @@ def _cotacao_analitica(
     return float((df_fluxos["valor_pagamento"] / (1 + taxa) ** anos_uteis).sum())
 
 
-def _validar_curva_zero(curva_zero: pl.DataFrame) -> pl.DataFrame:
-    """Valida e normaliza a curva zero usada na precificação."""
-    colunas_necessarias = {"dias_uteis", "taxa_zero"}
-    colunas_ausentes = colunas_necessarias - set(curva_zero.columns)
-    if colunas_ausentes:
-        raise ValueError(
-            "Curva zero deve conter as colunas 'dias_uteis' e 'taxa_zero'."
-        )
-
-    return (
-        curva_zero.select(
-            pl.col("dias_uteis").cast(pl.Int64),
-            pl.col("taxa_zero").cast(pl.Float64),
-        )
-        .drop_nulls()
-        .sort("dias_uteis")
-    )
-
-
 def cotacao_curva_zero(
     data_liquidacao: DateLike,
     data_vencimento: DateLike,
@@ -310,6 +291,10 @@ def cotacao_curva_zero(
     Returns:
         float: Cotação em base 100 calculada pela curva zero.
 
+    Raises:
+        ValueError: Se faltarem as colunas ``dias_uteis`` e ``taxa_zero`` ou
+            se um mesmo prazo aparecer com taxas diferentes.
+
     Notes:
         Os documentos oficiais descrevem o desconto dos fluxos por uma taxa
         única pactuada. Eles não definem a interpolação ou a extrapolação da
@@ -324,7 +309,7 @@ def cotacao_curva_zero(
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return float("nan")
 
-    curva = _validar_curva_zero(curva_zero)
+    curva = _utils.validar_curva_zero(curva_zero)
     fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
     dias_fluxos = du.contar(data_liquidacao, fluxos["data_pagamento"])
     taxas_fluxos = interpolador.interpolar(
@@ -398,6 +383,10 @@ def taxa_curva_zero(
             para entradas ausentes.
             Também retorna NaN se a resolução numérica falhar.
 
+    Raises:
+        ValueError: Se faltarem as colunas ``dias_uteis`` e ``taxa_zero`` ou
+            se um mesmo prazo aparecer com taxas diferentes.
+
     Notes:
         Os documentos oficiais descrevem o desconto dos fluxos por uma taxa
         única pactuada. Eles não definem a interpolação ou a extrapolação da
@@ -412,7 +401,7 @@ def taxa_curva_zero(
     if any_is_empty(data_liquidacao, data_vencimento, nome_comercial):
         return float("nan")
 
-    curva = _validar_curva_zero(curva_zero)
+    curva = _utils.validar_curva_zero(curva_zero)
     fluxos = fluxos_caixa(data_liquidacao, data_vencimento, nome_comercial)
     dias_fluxos = du.contar(data_liquidacao, fluxos["data_pagamento"])
     taxas_zero = interpolador.interpolar(
@@ -516,7 +505,7 @@ def dv01(
     data_vencimento: DateLike,
     taxa: float | str,
     pu: float | Decimal,
-    nome_comercial: NomeComercial = NomeComercial.RENDA_MAIS,
+    nome_comercial: NomeComercial,
 ) -> float:
     """
     Calcula o DV01 (Dollar Value of 01) da NTN-B1 em R$.
