@@ -15,6 +15,7 @@ import pyield.cpm._contratos as modulo_contratos  # noqa: PLC2701
 
 DIRETORIO_DADOS = Path(__file__).parent / "data"
 pytestmark = pytest.mark.usefixtures("calendario_copom_local")
+TOTAL_CPM_20261030 = 47
 
 
 # ── Parsing do código de negociação ──────────────────────────────────────
@@ -104,3 +105,24 @@ def test_contratos_reproduzem_referencia_historica(monkeypatch, cpm_fixture):
         cpm_fixture.drop("preco_ajuste"),
         check_exact=True,
     )
+
+
+def test_precos_referencia_ignoram_tipo_das_demais_colunas():
+    # Em 30/10/2026, "Preço de abertura" só tem inteiros nas primeiras linhas e
+    # "27,68" na linha 187; inferir o tipo dessa coluna gerava ComputeError.
+    csv_bytes = (DIRETORIO_DADOS / "consolidados_20261030.csv").read_bytes()
+
+    precos = modulo_contratos._parsear_precos_referencia(csv_bytes)
+
+    assert precos.height == TOTAL_CPM_20261030
+    assert precos.schema == {"codigo_negociacao": pl.String, "preco_ajuste": pl.Float64}
+    # Valores conferidos nas linhas do CSV bruto da B3.
+    esperado = {
+        "CPMX26C099000": 0.0,
+        "CPMX26C099500": 0.3,
+        "CPMX26C099750": 26.0,
+        "CPMX26C100000": 72.5,
+        "CPMZ26C099750": 12.0,
+    }
+    obtido = precos.filter(pl.col("codigo_negociacao").is_in(list(esperado)))
+    assert dict(obtido.iter_rows()) == esperado

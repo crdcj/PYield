@@ -84,6 +84,9 @@ def _parsear_precos_referencia(csv_bytes: bytes) -> pl.DataFrame:
             skip_lines=2,
             null_values=["-"],
             decimal_comma=True,
+            # Lê só as colunas usadas: inferir o tipo das demais falha quando
+            # as primeiras linhas de uma coluna de preço não têm decimais.
+            columns=list(_CSV_ESQUEMA),
             schema_overrides=_CSV_ESQUEMA,
             encoding="utf-8-sig",
         )

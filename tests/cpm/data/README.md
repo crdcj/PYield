@@ -15,7 +15,12 @@ Capturas brutas obtidas em 02/11/2026, preservadas byte a byte:
   }
   ```
 
-O CSV contém apenas o cabeçalho: a B3 não mantém o preço de referência de
+- `consolidados_20261030.csv`: o mesmo POST, capturado em 11/11/2026, com
+  `"Date"` e `"FinalDate"` iguais a `"2026-10-30"`. Contém os preços de
+  referência e reproduz a falha de inferência de tipo em `Preço de abertura`
+  (inteiros nas primeiras linhas e `27,68` na linha 187).
+
+O CSV de 29/01/2025 contém apenas o cabeçalho: a B3 não mantém o preço de referência de
 datas antigas nessa exportação. A comparação com `cpm_29012025.parquet`
 verifica os demais campos; os preços históricos desse Parquet permanecem
 como referência dos testes de probabilidades.
