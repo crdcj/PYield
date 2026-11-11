@@ -99,74 +99,96 @@ quando houver incompatibilidades. Atualize o índice `docs/releases.md` e a
 navegação em `mkdocs.yml`. O README mantém apenas o link permanente para as notas,
 sem acumular resumos de versões.
 
-Ao criar uma Release no GitHub, copie o conteúdo dessa página para as notas.
-A página da documentação é a fonte canônica. Use URLs absolutas para links nas
-notas, pois o mesmo texto será exibido no GitHub.
+A Release do GitHub é criada a partir dessa página, que é a fonte canônica.
+Links relativos para outras páginas da documentação são convertidos em URLs
+absolutas do site na publicação.
 Notas de correções pequenas podem ter apenas um parágrafo; mudanças incompatíveis
 devem explicar o impacto e mostrar a migração.
 
-## Atualizar a versão
+## Publicar uma versão
 
-Confira a versão atual sem alterar arquivos:
+A publicação é feita pelo workflow `.github/workflows/release.yml`, disparado
+pelo push de uma tag `vX.Y.Z`. Localmente, basta preparar a versão:
+
+1. Atualize a versão seguindo o incremento semântico (`patch`, `minor` ou
+   `major`) e confira o resultado:
+
+    ```sh
+    uv version --bump patch
+    uv version
+    ```
+
+2. Escreva as notas em `docs/release-X.Y.Z.md` e atualize `docs/releases.md` e
+   `mkdocs.yml`, conforme a seção anterior.
+3. Faça o commit, crie a tag e envie os dois:
+
+    ```sh
+    git commit -am "release: X.Y.Z"
+    git tag vX.Y.Z
+    git push --follow-tags
+    ```
+
+O workflow executa, em ordem:
+
+1. **verificar**: confere se a tag corresponde à versão do `pyproject.toml` e
+   se as notas existem; executa formatação, lint, tipos, testes locais
+   (`tests -m "not rede"`, sem doctests) e o build estrito da documentação;
+2. **pypi**: gera os artefatos com `uv build --no-sources --clear` e publica
+   no PyPI por Trusted Publishing, sem token;
+3. **release-github**: cria a Release `PYield X.Y.Z` com o conteúdo de
+   `docs/release-X.Y.Z.md`, convertendo links relativos em URLs absolutas do
+   site;
+4. **docs**: gera a documentação e publica no GitHub Pages.
+
+Se uma etapa falhar, as seguintes não rodam. Corrija a causa e use **Re-run
+failed jobs** na execução do workflow. Não recrie a tag depois que a versão
+chegou ao PyPI: o PyPI não aceita reenviar a mesma versão. Nesse caso, publique
+uma nova versão de correção.
+
+Acompanhe a execução na aba **Actions** do repositório ou com:
 
 ```sh
-uv version
+gh run watch
 ```
 
-Para atualizar a versão seguindo o próximo incremento semântico, use, por
-exemplo:
+### Configuração única
 
-```sh
-uv version --bump patch
-```
+O Trusted Publishing exige cadastrar o workflow no PyPI. Em
+[pypi.org/manage/project/pyield/settings/publishing](https://pypi.org/manage/project/pyield/settings/publishing/),
+adicione um publisher do GitHub com:
 
-Também estão disponíveis `major`, `minor`, `alpha`, `beta`, `rc`, `post` e
-`dev`. Revise o diff e os arquivos gerados pelo lockfile antes de continuar.
+- Owner: `crdcj`;
+- Repository name: `PYield`;
+- Workflow name: `release.yml`;
+- Environment name: `pypi`.
 
-## Gerar os artefatos
+O ambiente `pypi` é criado pelo GitHub na primeira execução. Em **Settings →
+Environments → pypi**, é possível exigir aprovação manual antes do envio ao
+PyPI.
 
-O projeto usa `uv_build` como backend PEP 517. Gere a distribuição a partir da
-raiz:
+### Publicação manual
+
+Use apenas se o workflow estiver indisponível. Gere os artefatos e confira a
+versão:
 
 ```sh
 uv build --no-sources --clear
-```
-
-O comando cria a distribuição fonte e a wheel no diretório `dist/`.
-`--no-sources` ignora fontes alternativas de dependências configuradas em
-`tool.uv.sources`, validando o build com os metadados usados na publicação.
-`--clear` limpa o diretório de saída antes do build para evitar a publicação de
-artefatos de versões anteriores. Antes de publicar, confirme o conteúdo dos
-artefatos e a versão:
-
-```sh
 ls dist
 ```
 
-## Publicar no PyPI
-
-Depois de atualizar a versão, executar as verificações e gerar os artefatos,
-publique o conteúdo de `dist/`. Para publicação local, mantenha o token no
-arquivo `.env` (esse arquivo já é ignorado pelo Git):
+Publique com o token mantido no arquivo `.env`, que já é ignorado pelo Git:
 
 ```dotenv
 UV_PUBLISH_TOKEN=pypi-...
 ```
 
-Carregue o arquivo explicitamente ao publicar:
-
 ```sh
+uv run --env-file .env uv publish --dry-run
 uv run --env-file .env uv publish
 ```
 
-Para validar o fluxo sem enviar os arquivos, use:
-
-```sh
-uv run --env-file .env uv publish --dry-run
-```
-
 Não inclua tokens no repositório nem em comandos registrados no histórico do
-shell.
+shell. Depois, crie a Release no GitHub com as notas da versão e publique a
+documentação, como descrito em [Documentação](#documentacao).
 
-O nome e a versão do pacote publicados precisam ser novos no índice. Depois do
-upload, confira a página do [PYield no PyPI](https://pypi.org/project/pyield/).
+Confira o resultado na página do [PYield no PyPI](https://pypi.org/project/pyield/).

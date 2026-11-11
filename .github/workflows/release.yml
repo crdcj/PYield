@@ -1,0 +1,86 @@
+# Publica uma versão a partir de uma tag vX.Y.Z: verifica, envia ao PyPI,
+# cria a Release no GitHub e atualiza a documentação no GitHub Pages.
+# O procedimento está em docs/desenvolvimento.md.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  VERSAO: ${{ github.ref_name }}
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Conferir tag, versão e notas
+        run: |
+          versao="${VERSAO#v}"
+          test "$(uv version --short)" = "$versao" \
+            || { echo "Tag $VERSAO difere da versão do pyproject.toml"; exit 1; }
+          test -f "docs/release-$versao.md" \
+            || { echo "Faltam as notas em docs/release-$versao.md"; exit 1; }
+
+      - run: uv sync
+      - run: uv run ruff format --check $(git ls-files '*.py' '*.md')
+      - run: uv run ruff check $(git ls-files '*.py' '*.md')
+      - run: uv run ty check
+      # Sem doctests nem testes de rede: fontes externas fora do ar não devem
+      # bloquear a publicação.
+      - run: uv run pytest tests -m "not rede" -o addopts=""
+      - run: uv run zensical build --clean --strict
+
+  pypi:
+    needs: verificar
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # Trusted Publishing, sem token
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv build --no-sources --clear
+      - run: uv publish --trusted-publishing always
+
+  release-github:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Criar Release com as notas da documentação
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          versao="${VERSAO#v}"
+          # Links relativos (pagina.md#ancora) viram URLs absolutas do site.
+          sed -E 's#\]\(([A-Za-z0-9._-]+)\.md(\#[A-Za-z0-9_-]+)?\)#](https://crdcj.github.io/PYield/\1/\2)#g' \
+            "docs/release-$versao.md" > notas.md
+          gh release create "$VERSAO" --title "PYield $versao" --notes-file notas.md
+
+  docs:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - run: uv run zensical build --clean --strict
+      - name: Publicar no GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --depth=1 origin gh-pages
+          git branch gh-pages FETCH_HEAD
+          uv tool run ghp-import -n -p site
