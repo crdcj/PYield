@@ -64,13 +64,14 @@ def _buscar_csv(data: dt.date) -> bytes:
         "Accept": "application/json, text/plain, */*",
     }
     # POST de exportação de dados por data; seguro de repetir.
+    # Export da B3 leva 2-9 s, com picos de até 40 s (medido em 11/2026).
     resposta = requisitar(
         requests.post,
         url,
         params=parametros,
         json=carga,
         headers=cabecalhos,
-        timeout_leitura=30,
+        timeout_leitura=15,
     )
     return resposta.content
 

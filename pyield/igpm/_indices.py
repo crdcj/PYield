@@ -21,7 +21,8 @@ _ESQUEMA = {"periodo": pl.Int64, "indice": _TIPO_INDICE}
 
 def _buscar_historico() -> bytes:
     """Busca o JSON bruto da série de números-índice do IGP-M."""
-    resposta = requisitar(requests.get, _URL_INDICES, timeout_leitura=30)
+    # Ipeadata indisponível na medição de 11/2026; reavaliar antes de reduzir.
+    resposta = requisitar(requests.get, _URL_INDICES, timeout_leitura=15)
     return resposta.content
 
 

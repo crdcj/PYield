@@ -137,7 +137,7 @@ def test_cpm_repete_apenas_post_preservando_payload(
             return resposta
 
         assert requisicao.method == "POST"
-        assert kwargs["timeout"] == (5, 30)
+        assert kwargs["timeout"] == [(5, 15), (5, 30)][len(posts)]
         posts.append(requisicao)
         if len(posts) == 1 or not recuperar:
             if falha is requests.ReadTimeout:

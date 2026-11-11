@@ -35,7 +35,7 @@ _VAR_INDICE = 2266
 
 def _buscar_dados_api(url: str) -> dict[str, str]:
     """Busca dados da API do IBGE e retorna o dicionário da série."""
-    resposta = requisitar(requests.get, url, timeout_leitura=10)
+    resposta = requisitar(requests.get, url, timeout_leitura=5)
     dados = resposta.json()
     if not dados:
         return {}

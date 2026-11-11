@@ -32,7 +32,7 @@ def _buscar_conteudo_url(data_referencia: dt.date) -> bytes:
     }
 
     # POST de consulta histórica por data; seguro de repetir.
-    resposta = requisitar(requests.post, URL_IMA, data=payload, timeout_leitura=10)
+    resposta = requisitar(requests.post, URL_IMA, data=payload, timeout_leitura=5)
     if "Não há dados disponíveis" in resposta.text:
         return b""
     return resposta.content

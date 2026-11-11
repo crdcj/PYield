@@ -9,7 +9,7 @@ from pyield._internal.retry import requisitar
 
 def _buscar_conteudo(url: str) -> bytes:
     """Busca o conteúdo bruto de uma URL do Tesouro Nacional."""
-    resposta = requisitar(requests.get, url, timeout_leitura=60)
+    resposta = requisitar(requests.get, url, timeout_leitura=5)
     return resposta.content
 
 

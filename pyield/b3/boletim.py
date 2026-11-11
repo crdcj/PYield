@@ -127,7 +127,8 @@ def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
         Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503
         ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo.
         Retry-After inválido ou superior a um segundo impede a retentativa.
-        Os timeouts de conexão e leitura são de 5 e 10 segundos por tentativa.
+        O timeout de conexão é de 5 segundos; o de leitura é de 5 segundos na
+        primeira tentativa e 10 na retentativa.
         Erros de certificado e demais erros HTTP são propagados sem repetição.
         Após a última falha, a exceção é propagada. A validação do ZIP não
         provoca novo download. Não mantém cache entre chamadas.
@@ -143,7 +144,7 @@ def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
     prefixo = "PR" if boletim_completo else "SPRD"
     url = f"https://www.b3.com.br/pesquisapregao/download?filelist={prefixo}{data_str}.zip"
 
-    resposta = requisitar(_SESSAO.get, url, timeout_leitura=10)
+    resposta = requisitar(_SESSAO.get, url, timeout_leitura=5)
 
     if not _zip_valido(resposta.content):
         return bytes()

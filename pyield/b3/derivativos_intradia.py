@@ -78,7 +78,7 @@ def _buscar_json_intradia(contrato: str) -> list[dict]:
     cabecalhos = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"  # noqa: E501
     }
-    resposta = requisitar(requests.get, url, headers=cabecalhos, timeout_leitura=10)
+    resposta = requisitar(requests.get, url, headers=cabecalhos, timeout_leitura=5)
     resposta.encoding = "utf-8"
 
     if "Quotation not available" in resposta.text:

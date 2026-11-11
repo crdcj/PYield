@@ -41,7 +41,7 @@ def test_download_recupera_falha_transitoria(monkeypatch, transporte):
 
     def enviar(self, requisicao, **kwargs):
         chamadas.append(requisicao.url)
-        assert kwargs["timeout"] == (5, 10)
+        assert kwargs["timeout"] == [(5, 5), (5, 10)][len(chamadas) - 1]
         if len(chamadas) == 1:
             raise erro
         return _resposta(200, conteudo)

@@ -115,7 +115,7 @@ def _baixar_texto(data_referencia: dt.date) -> str:
     url_file = f"{data_referencia.strftime('%Y%m%d')}APC238"
     url = url_base + url_file
 
-    response = requisitar(requests.get, url, timeout_leitura=10)
+    response = requisitar(requests.get, url, timeout_leitura=5)
     return response.text
 
 

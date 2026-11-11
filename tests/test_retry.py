@@ -141,11 +141,11 @@ def test_304_sem_requisicao_condicional_e_erro_http(monkeypatch, transporte):
 @pytest.mark.parametrize(
     ("consultar", "timeout_esperado"),
     [
-        (lambda: yd.tpf.estoque("04-02-2026"), (5, 10)),
-        (lambda: yd.selic.meta_serie(ultimos=1), (5, 30)),
-        (lambda: yd.vna.ultimo("NTN-B"), (5, 60)),
-        (lambda: yd.cpm.contratos("29-01-2025"), (5, 10)),
-        (lambda: yd.igpm.calendario(2026), (5, 30)),
+        (lambda: yd.tpf.estoque("04-02-2026"), (5, 5)),
+        (lambda: yd.selic.meta_serie(ultimos=1), (5, 15)),
+        (lambda: yd.vna.ultimo("NTN-B"), (5, 5)),
+        (lambda: yd.cpm.contratos("29-01-2025"), (5, 5)),
+        (lambda: yd.igpm.calendario(2026), (5, 5)),
     ],
 )
 def test_consultas_separam_conexao_e_leitura(monkeypatch, consultar, timeout_esperado):

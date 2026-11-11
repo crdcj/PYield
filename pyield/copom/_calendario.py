@@ -31,13 +31,13 @@ _SCHEMA = {
 
 def _buscar_atas() -> bytes:
     resposta = requisitar(
-        requests.get, _URL_ATAS, params={"quantidade": 500}, timeout_leitura=30
+        requests.get, _URL_ATAS, params={"quantidade": 500}, timeout_leitura=5
     )
     return resposta.content
 
 
 def _buscar_calendario() -> bytes:
-    resposta = requisitar(requests.get, _URL_ICS, timeout_leitura=30)
+    resposta = requisitar(requests.get, _URL_ICS, timeout_leitura=5)
     return resposta.content
 
 

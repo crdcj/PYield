@@ -161,7 +161,7 @@ def _buscar_dados_leiloes(
         parametros["anoinicial"] = str(ano_inicial)
 
     resposta = requisitar(
-        requests.get, endpoint_api, params=parametros, timeout_leitura=10
+        requests.get, endpoint_api, params=parametros, timeout_leitura=5
     )
     return resposta.json().get("registros") or []
 

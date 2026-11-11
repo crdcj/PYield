@@ -35,9 +35,10 @@ TPF e futuros, que mantêm cache em memória por processo, renovado diariamente.
 
 Falhas transitórias de comunicação permitem uma única retentativa por download,
 com espera entre 0,5 e 1 segundo. Se a falha persistir, a exceção é propagada.
-As consultas HTTP usam 5 segundos para conexão e 10, 30 ou 60 segundos para
-leitura, conforme o endpoint. Esses limites valem por tentativa; não há garantia
-de um prazo total rígido. Consulte a [política de retentativas](release-0.62.0.md#falhas-de-rede-e-retentativas)
+As consultas HTTP usam 5 segundos para conexão. O timeout de leitura é de 5
+segundos na primeira tentativa, ou 15 nos endpoints mais lentos, e dobra na
+retentativa. Esses limites valem por tentativa; não há garantia de um prazo total
+rígido. Consulte a [política de retentativas](release-0.62.0.md#falhas-de-rede-e-retentativas)
 para os erros elegíveis e o tratamento de `Retry-After`.
 
 ## Dias úteis

@@ -38,7 +38,7 @@ def _buscar_json_api(incluir_historico: bool) -> dict:
     """Busca os dados brutos de benchmarks na API do Tesouro Nacional."""
     param = "S" if incluir_historico else "N"
     url = f"{URL_BASE_API}?incluir_historico={param}"
-    resposta = requisitar(requests.get, url, timeout_leitura=10)
+    resposta = requisitar(requests.get, url, timeout_leitura=5)
     return resposta.json()
 
 

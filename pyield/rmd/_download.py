@@ -15,7 +15,7 @@ _URL_PAGINA_RMD = (
 
 def _buscar_conteudo(url: str) -> bytes:
     """Busca o conteúdo de uma URL, seguindo redirects."""
-    resposta = requisitar(requests.get, url, timeout_leitura=60)
+    resposta = requisitar(requests.get, url, timeout_leitura=5)
     return resposta.content
 
 

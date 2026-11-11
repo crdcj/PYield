@@ -17,7 +17,7 @@ def _buscar_calendario() -> list[bytes]:
     pagina = 1
     while True:
         resposta = requisitar(
-            requests.get, _URL, params={"qtd": 100, "page": pagina}, timeout_leitura=30
+            requests.get, _URL, params={"qtd": 100, "page": pagina}, timeout_leitura=5
         )
         paginas.append(resposta.content)
         proxima = resposta.json()["nextPage"]

@@ -35,7 +35,7 @@ def _buscar_calendario(ano: int) -> bytes:
                 "field_divulgacao_data_value": f"{ano}-01-01",
                 "field_divulgacao_data_value_1": f"{ano}-12-31",
             },
-            timeout_leitura=30,
+            timeout_leitura=5,
         )
         return resposta.content
 

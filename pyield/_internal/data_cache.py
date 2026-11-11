@@ -26,7 +26,7 @@ def _carregar_arquivo_github(url_arquivo: str) -> pl.DataFrame:
     """
     # 1. Baixa os bytes usando requests (já lida com redirects e proxies do sistema)
     # Adicionando timeout para não travar o processo indefinidamente
-    response = requisitar(requests.get, url_arquivo, timeout_leitura=10)
+    response = requisitar(requests.get, url_arquivo, timeout_leitura=5)
 
     # 2. O Polars lê o buffer como se fosse um arquivo local
     return pl.read_parquet(response.content)

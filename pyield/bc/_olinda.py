@@ -20,7 +20,7 @@ def montar_url(url_base: str, parametros: dict[str, str]) -> str:
 
 def buscar_csv(url: str) -> bytes:
     """Busca CSV da API OData do BCB."""
-    r = requisitar(requests.get, url, timeout_leitura=10)
+    r = requisitar(requests.get, url, timeout_leitura=5)
     return r.content
 
 

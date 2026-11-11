@@ -11,6 +11,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 _TIMEOUT_CONEXAO_SEGUNDOS = 5
+_FATOR_TIMEOUT_LEITURA_RETRY = 2
 _ESPERA_MINIMA = 0.5
 _ESPERA_MAXIMA = 1.0
 _STATUS_HTTP_TRANSITORIOS = {502, 503, 504}
@@ -54,9 +55,11 @@ def requisitar(
 ) -> requests.Response:
     """Aplica retry leve a uma consulta HTTP explicitamente segura de repetir.
 
-    O chamador mantém método e sessão e informa apenas o timeout de leitura.
-    O timeout de conexão é fixo em 5 segundos. Apenas envio, download e status
-    HTTP participam da retentativa; o corpo é processado pelo chamador.
+    O chamador mantém método e sessão e informa apenas o timeout de leitura da
+    primeira tentativa; a retentativa usa o dobro. O padrão é 5 segundos; valores
+    maiores exigem medição da fonte. O timeout de conexão é fixo em 5 segundos.
+    Apenas envio, download e status HTTP participam da retentativa; o corpo é
+    processado pelo chamador.
 
     Há no máximo duas tentativas. Repete somente falhas transitórias de
     comunicação ou HTTP 502/503/504. Retry-After inválido ou superior a um
@@ -64,10 +67,8 @@ def requisitar(
     exceção do transporte.
     """
 
-    def baixar() -> requests.Response:
-        resposta = enviar(
-            url, timeout=(_TIMEOUT_CONEXAO_SEGUNDOS, timeout_leitura), **kwargs
-        )
+    def baixar(timeout: float) -> requests.Response:
+        resposta = enviar(url, timeout=(_TIMEOUT_CONEXAO_SEGUNDOS, timeout), **kwargs)
         resposta.raise_for_status()
         if resposta.status_code == HTTPStatus.NOT_MODIFIED:
             # Sem requisição condicional, 304 é resposta inválida da fonte.
@@ -78,7 +79,7 @@ def requisitar(
         return resposta
 
     try:
-        return baixar()
+        return baixar(timeout_leitura)
     except (
         requests.ConnectionError,
         requests.Timeout,
@@ -96,4 +97,4 @@ def requisitar(
             espera,
         )
         time.sleep(espera)
-    return baixar()
+    return baixar(timeout_leitura * _FATOR_TIMEOUT_LEITURA_RETRY)

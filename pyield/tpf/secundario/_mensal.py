@@ -39,7 +39,7 @@ def _nome_arquivo_mensal(data: DateLike, extragrupo: bool = False) -> str:
 
 
 def _baixar_url_zip(url_arquivo: str) -> bytes:
-    return requisitar(requests.get, url_arquivo, timeout_leitura=60).content
+    return requisitar(requests.get, url_arquivo, timeout_leitura=5).content
 
 
 def baixar_zip(data: DateLike, extragrupo: bool = False) -> bytes:

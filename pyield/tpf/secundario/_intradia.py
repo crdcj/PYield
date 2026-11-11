@@ -21,8 +21,8 @@ def _buscar_csv_intradia() -> bytes:
     hoje = relogio.hoje()
     data_formatada = hoje.strftime("%d-%m-%Y")
     url = f"{URL_BASE_TEMPO_REAL}{data_formatada}"
-    # API costuma levar ~10s
-    resposta = requisitar(requests.get, url, timeout_leitura=30)
+    # API costuma levar ~10s; 4,4 s medido fora do pregão em 11/2026.
+    resposta = requisitar(requests.get, url, timeout_leitura=15)
     return resposta.content
 
 

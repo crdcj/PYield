@@ -64,7 +64,7 @@ def _montar_url_arquivo(data: dt.date) -> str:
 
 def _obter_csv(data: dt.date) -> bytes:
     url_arquivo = _montar_url_arquivo(data)
-    resposta = requisitar(requests.get, url_arquivo, timeout_leitura=10)
+    resposta = requisitar(requests.get, url_arquivo, timeout_leitura=5)
     return resposta.content
 
 

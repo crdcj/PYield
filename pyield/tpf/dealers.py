@@ -20,7 +20,7 @@ ESQUEMA_SAIDA = {
 
 def _buscar_dealers() -> dict:
     """Busca os dados brutos de dealers na API do Tesouro Nacional."""
-    resposta = requisitar(requests.get, URL_API, timeout_leitura=10)
+    resposta = requisitar(requests.get, URL_API, timeout_leitura=5)
     return resposta.json()
 
 

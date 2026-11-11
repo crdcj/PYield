@@ -21,7 +21,7 @@ class ProjecaoIndicador:
 def _baixar_planilha() -> bytes:
     """Baixa o arquivo XLS de indicadores da ANBIMA e retorna os bytes."""
     try:
-        r = requisitar(requests.get, _URL_XLS, timeout_leitura=10)
+        r = requisitar(requests.get, _URL_XLS, timeout_leitura=5)
         return r.content
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Erro ao acessar a planilha da ANBIMA: {e}") from e

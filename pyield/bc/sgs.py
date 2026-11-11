@@ -71,7 +71,8 @@ class SerieSGS(Enum):
 
 
 def _chamar_api(url_api: str) -> list[dict[str, str]]:
-    resposta = requisitar(requests.get, url_api, timeout_leitura=30)
+    # Consulta inédita leva 4-5 s até o primeiro byte (medido em 11/2026).
+    resposta = requisitar(requests.get, url_api, timeout_leitura=15)
     return resposta.json()
 
 
