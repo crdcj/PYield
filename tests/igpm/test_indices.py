@@ -11,8 +11,8 @@ import pyield as yd
 from pyield.igpm import _indices as igpm  # noqa: PLC2701
 
 _DADOS = Path(__file__).parent / "data" / "igpm_ipeadata_202609.json"
-_INICIO_COBERTURA = 199408
-_ESQUEMA = {"periodo": pl.Int64, "indice": pl.Decimal(precision=18, scale=3)}
+_INICIO_COBERTURA = dt.date(1994, 8, 1)
+_ESQUEMA = {"competencia": pl.Date, "indice": pl.Decimal(precision=18, scale=3)}
 
 
 @pytest.fixture(autouse=True)
@@ -48,8 +48,8 @@ def test_serie_intervalo_inclusivo_por_mes():
 
     assert resultado.schema == _ESQUEMA
     assert resultado.to_dicts() == [
-        {"periodo": 200006, "indice": Decimal("183.745")},
-        {"periodo": 200007, "indice": Decimal("186.634")},
+        {"competencia": dt.date(2000, 6, 1), "indice": Decimal("183.745")},
+        {"competencia": dt.date(2000, 7, 1), "indice": Decimal("186.634")},
     ]
 
 
@@ -58,14 +58,19 @@ def test_serie_fim_padrao_usa_hoje(monkeypatch):
 
     resultado = yd.igpm.indice_serie("15-06-2000")
 
-    assert resultado["periodo"].to_list() == [200006, 200007]
+    assert resultado["competencia"].to_list() == [
+        dt.date(2000, 6, 1),
+        dt.date(2000, 7, 1),
+    ]
 
 
 def test_ultimos_tem_prioridade():
     resultado = yd.igpm.indice_serie("invalida", "invalida", ultimos=1)
 
     assert resultado.schema == _ESQUEMA
-    assert resultado.to_dicts() == [{"periodo": 202609, "indice": Decimal("1225.846")}]
+    assert resultado.to_dicts() == [
+        {"competencia": dt.date(2026, 9, 1), "indice": Decimal("1225.846")}
+    ]
 
 
 def test_serie_omite_competencias_anteriores_ao_corte():
@@ -73,8 +78,8 @@ def test_serie_omite_competencias_anteriores_ao_corte():
 
     assert resultado.schema == _ESQUEMA
     assert resultado.to_dicts() == [
-        {"periodo": 199408, "indice": Decimal("100.000")},
-        {"periodo": 199409, "indice": Decimal("101.751")},
+        {"competencia": dt.date(1994, 8, 1), "indice": Decimal("100.000")},
+        {"competencia": dt.date(1994, 9, 1), "indice": Decimal("101.751")},
     ]
     assert yd.igpm.indice("01-08-1994").as_tuple() == Decimal("100.000").as_tuple()
 
@@ -95,7 +100,7 @@ def test_ultimos_respeita_corte_historico():
     resultado = yd.igpm.indice_serie(ultimos=1000)
 
     assert resultado.schema == _ESQUEMA
-    assert resultado["periodo"].min() == _INICIO_COBERTURA
+    assert resultado["competencia"].min() == _INICIO_COBERTURA
     assert resultado.item(0, "indice").as_tuple() == Decimal("100.000").as_tuple()
 
 

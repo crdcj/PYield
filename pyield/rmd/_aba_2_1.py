@@ -64,7 +64,7 @@ def estruturar_dados(conteudo_excel: bytes) -> pl.DataFrame:
         pl.DataFrame(
             _montar_registros(df_bruto),
             schema={
-                "periodo": pl.Date,
+                "competencia": pl.Date,
                 "detentor": pl.String,
                 "tipo": pl.String,
                 "categoria": pl.String,

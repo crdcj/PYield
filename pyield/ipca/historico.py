@@ -47,8 +47,8 @@ def _processar_ipca(dados: dict[str, str]) -> pl.DataFrame:
     return pl.DataFrame(
         {"periodo": dados.keys(), "valor": dados.values()},
         schema={"periodo": pl.String, "valor": pl.String},
-    ).with_columns(
-        periodo=pl.col("periodo").cast(pl.Int64),
+    ).select(
+        competencia=(pl.col("periodo") + "01").str.to_date("%Y%m%d"),
         valor=pl.col("valor").cast(pl.Decimal(precision=18, scale=2)),
     )
 
@@ -102,10 +102,10 @@ def taxa_serie(
             tem prioridade sobre ``inicio`` e ``fim``.
 
     Returns:
-        pl.DataFrame com colunas 'periodo' e 'taxa' (decimal).
+        pl.DataFrame com colunas 'competencia' e 'taxa' (decimal).
 
     Output Columns:
-        * periodo (Int64): período no formato YYYYMM.
+        * competencia (Date): primeiro dia do mês de referência.
         * taxa (Decimal(18, 4)): taxa mensal em decimal (ex: 0.0016 = 0,16%).
 
     Notes:
@@ -120,22 +120,22 @@ def taxa_serie(
         >>> from pyield import ipca
         >>> ipca.taxa_serie("01-01-2025", "01-03-2025")  # decimal (0.0016 = 0,16%)
         shape: (3, 2)
-        ┌─────────┬───────────────┐
-        │ periodo ┆ taxa          │
-        │ ---     ┆ ---           │
-        │ i64     ┆ decimal[18,4] │
-        ╞═════════╪═══════════════╡
-        │ 202501  ┆ 0.0016        │
-        │ 202502  ┆ 0.0131        │
-        │ 202503  ┆ 0.0056        │
-        └─────────┴───────────────┘
+        ┌─────────────┬───────────────┐
+        │ competencia ┆ taxa          │
+        │ ---         ┆ ---           │
+        │ date        ┆ decimal[18,4] │
+        ╞═════════════╪═══════════════╡
+        │ 2025-01-01  ┆ 0.0016        │
+        │ 2025-02-01  ┆ 0.0131        │
+        │ 2025-03-01  ┆ 0.0056        │
+        └─────────────┴───────────────┘
         >>> # Obter a taxa do IPCA do último mês
         >>> df = ipca.taxa_serie(ultimos=1)
         >>> # Obter as taxas do IPCA dos últimos 3 meses
         >>> df = ipca.taxa_serie(ultimos=3)
     """
     return _buscar_serie(inicio, fim, ultimos, _VAR_TAXA).select(
-        "periodo",
+        "competencia",
         # A divisão decimal do Polars preserva a escala do numerador.
         taxa=(pl.col("valor").cast(pl.Decimal(precision=18, scale=4)) / 100).cast(
             pl.Decimal(precision=18, scale=4)
@@ -186,10 +186,10 @@ def indice_serie(
             tem prioridade sobre ``inicio`` e ``fim``.
 
     Returns:
-        pl.DataFrame com colunas 'periodo' e 'indice'.
+        pl.DataFrame com colunas 'competencia' e 'indice'.
 
     Output Columns:
-        * periodo (Int64): período no formato YYYYMM.
+        * competencia (Date): primeiro dia do mês de referência.
         * indice (Decimal(18, 2)): número-índice do IPCA.
 
     Notes:
@@ -205,15 +205,15 @@ def indice_serie(
         >>> # Obter os números-índice do IPCA para o primeiro trimestre
         >>> ipca.indice_serie(inicio="01-01-2025", fim="01-03-2025")
         shape: (3, 2)
-        ┌─────────┬───────────────┐
-        │ periodo ┆ indice        │
-        │ ---     ┆ ---           │
-        │ i64     ┆ decimal[18,2] │
-        ╞═════════╪═══════════════╡
-        │ 202501  ┆ 7111.86       │
-        │ 202502  ┆ 7205.03       │
-        │ 202503  ┆ 7245.38       │
-        └─────────┴───────────────┘
+        ┌─────────────┬───────────────┐
+        │ competencia ┆ indice        │
+        │ ---         ┆ ---           │
+        │ date        ┆ decimal[18,2] │
+        ╞═════════════╪═══════════════╡
+        │ 2025-01-01  ┆ 7111.86       │
+        │ 2025-02-01  ┆ 7205.03       │
+        │ 2025-03-01  ┆ 7245.38       │
+        └─────────────┴───────────────┘
         >>> # Obter o número-índice do IPCA do último mês
         >>> df = ipca.indice_serie(ultimos=1)
         >>> # Obter os números-índice do IPCA dos últimos 3 meses

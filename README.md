@@ -67,7 +67,7 @@ uv add pyield
 | `yd.selic` | módulo | Selic e política monetária | `over`, `over_serie`, `meta`, `meta_serie` |
 | `yd.cpm` | módulo | Opções digitais do COPOM e análises derivadas | `contratos`, `probabilidades` |
 | `yd.ipca` | módulo | IPCA histórico e projetado | `indice`, `indice_serie`, `taxa`, `taxa_serie`, `taxa_projetada`, `calendario` |
-| `yd.igpm` | módulo | Taxas e números-índice do IGP-M | `taxa`, `taxa_serie`, `indice`, `indice_serie`, `calendario` |
+| `yd.igpm` | módulo | IGP-M histórico e projetado | `taxa`, `taxa_serie`, `indice`, `indice_serie`, `taxa_projetada`, `calendario` |
 | `yd.ptax(data)` | função | PTAX para uma data | |
 | `yd.ptax_serie(inicio, fim)` | função | Série histórica da PTAX | |
 | `yd.di_over(data)` | função | Taxa DI Over | |

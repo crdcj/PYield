@@ -65,7 +65,7 @@ def _montar_registros(
     return pl.DataFrame(
         linhas,
         schema={
-            "periodo": pl.Date,
+            "competencia": pl.Date,
             "grupo": pl.String,
             "subgrupo": pl.String,
             "titulo": pl.String,

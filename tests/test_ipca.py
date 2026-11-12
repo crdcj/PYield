@@ -56,8 +56,10 @@ def test_serie(monkeypatch, serie, modo):
     assert urls == [
         f"{historico._URL_BASE}{periodo}/variaveis/{variavel}{historico._SUFIXO_URL}"
     ]
-    assert resultado.schema == {"periodo": pl.Int64, coluna: tipo}
-    assert resultado.to_dicts() == [{"periodo": 202501, coluna: esperado}]
+    assert resultado.schema == {"competencia": pl.Date, coluna: tipo}
+    assert resultado.to_dicts() == [
+        {"competencia": dt.date(2025, 1, 1), coluna: esperado}
+    ]
 
 
 @pytest.mark.parametrize("data", ["01-01-2025", "01/01/2025", "2025-01-01"])
@@ -108,7 +110,7 @@ def test_taxa_sem_dados(monkeypatch):
     assert isinstance(resultado, Decimal)
     assert resultado.is_nan()
     assert yd.ipca.taxa_serie(ultimos=1).schema == {
-        "periodo": pl.Int64,
+        "competencia": pl.Date,
         "taxa": pl.Decimal(precision=18, scale=4),
     }
 
@@ -121,7 +123,7 @@ def test_indice_sem_dados(monkeypatch):
     assert isinstance(resultado, Decimal)
     assert resultado.is_nan()
     assert yd.ipca.indice_serie(ultimos=1).schema == {
-        "periodo": pl.Int64,
+        "competencia": pl.Date,
         "indice": pl.Decimal(precision=18, scale=2),
     }
 

@@ -85,7 +85,8 @@ equivale a A4 na projeção decimal. Em `yd.vna.projetado`, o parâmetro
 explícito (`"0.45%"` ou `"0,45%"`), assim como `inflacao_projetada` de
 `yd.vna.contexto`. O retorno `Decimal("0.0045")` de
 `yd.ipca.taxa_projetada().valor_projetado` pode ser usado diretamente em
-`vna.projetado`.
+`vna.projetado`, assim como `yd.igpm.taxa_projetada().valor_projetado` para a
+NTN-C.
 A normalização da taxa de precificação dos títulos de leilão trunca a taxa
 decimal em oito casas antes do desconto.
 

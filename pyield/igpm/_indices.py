@@ -1,5 +1,6 @@
 """Números-índice do IGP-M da FGV disponibilizados pelo Ipeadata."""
 
+import datetime as dt
 import json
 from decimal import Decimal
 
@@ -14,9 +15,9 @@ from pyield._internal.types import DateLike, any_is_empty
 _URL_INDICES = (
     "https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO='IGP12_IGPM12')"
 )
-_PRIMEIRO_PERIODO = 199408
+_PRIMEIRA_COMPETENCIA = dt.date(1994, 8, 1)
 _TIPO_INDICE = pl.Decimal(precision=18, scale=3)
-_ESQUEMA = {"periodo": pl.Int64, "indice": _TIPO_INDICE}
+_ESQUEMA = {"competencia": pl.Date, "indice": _TIPO_INDICE}
 
 
 def _buscar_historico() -> bytes:
@@ -36,16 +37,15 @@ def _processar_historico(dados: list[dict[str, str | Decimal | None]]) -> pl.Dat
     return (
         pl.from_dicts(dados, schema={"VALDATA": pl.String, "VALVALOR": _TIPO_INDICE})
         .select(
-            periodo=pl.col("VALDATA")
+            competencia=pl.col("VALDATA")
             .str.slice(0, 10)
             .str.to_date("%Y-%m-%d")
-            .dt.strftime("%Y%m")
-            .cast(pl.Int64),
+            .dt.month_start(),
             indice=pl.col("VALVALOR"),
         )
-        .filter(pl.col("periodo") >= _PRIMEIRO_PERIODO)
+        .filter(pl.col("competencia") >= _PRIMEIRA_COMPETENCIA)
         .drop_nulls("indice")
-        .sort("periodo")
+        .sort("competencia")
     )
 
 
@@ -72,7 +72,7 @@ def indice_serie(
         Retorna vazio, preservando o esquema, se não houver dados no intervalo.
 
     Output Columns:
-        * periodo (Int64): competência mensal no formato YYYYMM.
+        * competencia (Date): primeiro dia do mês de referência.
         * indice (Decimal(18, 3)): número-índice do IGP-M.
 
     Notes:
@@ -91,14 +91,14 @@ def indice_serie(
     Examples:
         >>> yd.igpm.indice_serie("01-06-2000", "31-07-2000")
         shape: (2, 2)
-        ┌─────────┬───────────────┐
-        │ periodo ┆ indice        │
-        │ ---     ┆ ---           │
-        │ i64     ┆ decimal[18,3] │
-        ╞═════════╪═══════════════╡
-        │ 200006  ┆ 183.745       │
-        │ 200007  ┆ 186.634       │
-        └─────────┴───────────────┘
+        ┌─────────────┬───────────────┐
+        │ competencia ┆ indice        │
+        │ ---         ┆ ---           │
+        │ date        ┆ decimal[18,3] │
+        ╞═════════════╪═══════════════╡
+        │ 2000-06-01  ┆ 183.745       │
+        │ 2000-07-01  ┆ 186.634       │
+        └─────────────┴───────────────┘
     """
     if ultimos is not None:
         if ultimos <= 0:
@@ -112,12 +112,12 @@ def indice_serie(
     data_fim = converter_datas(fim) if fim is not None else relogio.hoje()
     if data_inicio is None or data_fim is None:
         raise ValueError("As datas do intervalo devem ser informadas.")
-    periodo_inicio = data_inicio.year * 100 + data_inicio.month
-    periodo_fim = data_fim.year * 100 + data_fim.month
-    if periodo_inicio > periodo_fim or periodo_fim < _PRIMEIRO_PERIODO:
+    competencia_inicio = data_inicio.replace(day=1)
+    competencia_fim = data_fim.replace(day=1)
+    if competencia_inicio > competencia_fim or competencia_fim < _PRIMEIRA_COMPETENCIA:
         return pl.DataFrame(schema=_ESQUEMA)
     return _processar_historico(_parsear_historico(_buscar_historico())).filter(
-        pl.col("periodo").is_between(periodo_inicio, periodo_fim)
+        pl.col("competencia").is_between(competencia_inicio, competencia_fim)
     )
 
 

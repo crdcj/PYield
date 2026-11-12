@@ -35,18 +35,20 @@ def test_calculo_publico_reproduz_toda_a_serie_ntnc(indices, vencimento, emissao
     )
     with localcontext(prec=28):
         fator_inicial = Decimal(1)
-        indice_base = indices[200006]
+        indice_base = indices[dt.date(2000, 6, 1)]
         if emissao.day != 1:
             # A emissão de 03/12/1999 tem 29 dias de atualização em dezembro.
             expoente = (Decimal(29) / 31).quantize(
                 Decimal("1e-14"), rounding=ROUND_DOWN
             )
-            fator_inicial = (indices[199912] / indices[199911]) ** expoente
-            indice_base = indices[199912]
+            fator_inicial = (
+                indices[dt.date(1999, 12, 1)] / indices[dt.date(1999, 11, 1)]
+            ) ** expoente
+            indice_base = indices[dt.date(1999, 12, 1)]
 
         for data, _, publicado in referencias.iter_rows():
             competencia = data - dt.timedelta(days=1)
-            indice_atual = indices[competencia.year * 100 + competencia.month]
+            indice_atual = indices[competencia.replace(day=1)]
 
             calculado = yd.vna.calcular_base(
                 "NTN-C", indice_atual, vencimento=dt.date(vencimento, 1, 1)
@@ -70,7 +72,9 @@ def test_primeiro_vna_publicado_da_serie_2006_perde_precisao(indices):
     primeira_base = referencias.item(0, "vna")
     publicado = referencias.filter(pl.col("data") == dt.date(2000, 9, 1)).item(0, "vna")
 
-    calculado = calculo.calcular_base(primeira_base, indices[200006], indices[200008])
+    calculado = calculo.calcular_base(
+        primeira_base, indices[dt.date(2000, 6, 1)], indices[dt.date(2000, 8, 1)]
+    )
 
     assert calculado == Decimal("1091.045593")
     assert publicado == Decimal("1091.045594")
@@ -85,6 +89,8 @@ def test_vencimento_aceita_formatos_da_biblioteca(vencimento):
 
 def test_origem_ntnc_independe_do_contexto_decimal(indices):
     with localcontext(prec=9):
-        resultado = yd.vna.calcular_base("NTN-C", indices[200006], "01-01-2006")
+        resultado = yd.vna.calcular_base(
+            "NTN-C", indices[dt.date(2000, 6, 1)], "01-01-2006"
+        )
 
     assert resultado == Decimal("1049.125124")

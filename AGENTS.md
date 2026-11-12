@@ -128,6 +128,11 @@ fonte alterna semântica entre taxa e preço, modele isso explicitamente para o
 usuário; não esconda a diferença em uma coluna genérica que transfere a
 interpretação para quem consome a biblioteca.
 
+O mês de referência de um dado mensal se chama `competencia` e é `Date` (ou
+`dt.date`) no primeiro dia do mês. Não use inteiro `YYYYMM` nem string na
+camada pública: inteiro induz aritmética errada (`202612 + 1`) e ambos exigem
+conversão para comparar ou cruzar com datas.
+
 ## Docstrings
 
 Docstrings devem estar em português e respeitar `line-length = 88`.

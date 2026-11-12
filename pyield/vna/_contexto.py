@@ -167,10 +167,10 @@ def contexto(
         origem = "informada" if projecao is not None else None
     indices = indexador.indice_serie(competencia_anterior, competencia).select(
         indice_anterior=pl.col("indice")
-        .filter(pl.col("periodo") == int(competencia_anterior.strftime("%Y%m")))
+        .filter(pl.col("competencia") == competencia_anterior)
         .first(),
         indice_atual=pl.col("indice")
-        .filter(pl.col("periodo") == int(competencia.strftime("%Y%m")))
+        .filter(pl.col("competencia") == competencia)
         .first(),
     )
     origem_indice = None

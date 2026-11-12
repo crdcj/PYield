@@ -12,6 +12,20 @@ ANBIMA, em `yd.ipca.taxa_projetada().valor_projetado`, também retorna `Decimal`
 com quatro casas. A unidade é decimal: `Decimal("0.0045")` representa 0,45%.
 A taxa histórica indisponível retorna `Decimal("NaN")` na consulta escalar.
 
+## Projeção vigente
+
+`yd.ipca.taxa_projetada()` retorna a projeção do IPCA que vale hoje para a
+atualização do VNA, segundo o Grupo Consultivo Permanente Macroeconômico da
+ANBIMA. O objeto informa `competencia` (primeiro dia do mês de referência,
+como em `calendario`), `valor_projetado`, `data_coleta` e `data_validade`. A projeção divulgada no fim da tarde só é retornada a partir
+da sua data de validade. Entre a divulgação do índice fechado e a validade da
+primeira projeção do mês seguinte, nenhuma projeção está vigente e a função
+retorna `None`.
+
+```python
+projecao = yd.ipca.taxa_projetada()
+```
+
 ## Calendário de divulgação
 
 `yd.ipca.calendario(ano)` consulta o calendário oficial do

@@ -303,7 +303,7 @@ def test_vna_ntnb_calcula_entre_valores_publicados(
         "indice_serie",
         lambda inicio, fim: pl.DataFrame(
             {
-                "periodo": [202511, 202512],
+                "competencia": [dt.date(2025, 11, 1), dt.date(2025, 12, 1)],
                 "indice": [7378.94, 7403.29],
             }
         ),
@@ -349,7 +349,7 @@ def test_vna_ntnb_usa_numeros_indice_com_precisao_normativa(
         assert fim == dt.date(2026, 7, 31)
         return pl.DataFrame(
             {
-                "periodo": [202606, 202607],
+                "competencia": [dt.date(2026, 6, 1), dt.date(2026, 7, 1)],
                 "indice": [7652.37, 7657.73],
             }
         )

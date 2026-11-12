@@ -210,7 +210,7 @@ def igpm_taxa_serie(
         DataFrame com as taxas mensais em decimal, ou vazio se não houver dados.
 
     Output Columns:
-        * periodo (Int64): competência mensal no formato YYYYMM.
+        * competencia (Date): primeiro dia do mês de referência.
         * taxa (Decimal(18, 4)): variação mensal em decimal (0.005 = 0,50%).
 
     Notes:
@@ -224,15 +224,15 @@ def igpm_taxa_serie(
     Examples:
         >>> yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
         shape: (3, 2)
-        ┌─────────┬───────────────┐
-        │ periodo ┆ taxa          │
-        │ ---     ┆ ---           │
-        │ i64     ┆ decimal[18,4] │
-        ╞═════════╪═══════════════╡
-        │ 202501  ┆ 0.0027        │
-        │ 202502  ┆ 0.0106        │
-        │ 202503  ┆ -0.0034       │
-        └─────────┴───────────────┘
+        ┌─────────────┬───────────────┐
+        │ competencia ┆ taxa          │
+        │ ---         ┆ ---           │
+        │ date        ┆ decimal[18,4] │
+        ╞═════════════╪═══════════════╡
+        │ 2025-01-01  ┆ 0.0027        │
+        │ 2025-02-01  ┆ 0.0106        │
+        │ 2025-03-01  ┆ -0.0034       │
+        └─────────────┴───────────────┘
 
         A taxa é mensal e decimal: março registra deflação de 0,34%.
         Para acompanhar as últimas competências, sem fixar os valores:
@@ -249,8 +249,8 @@ def igpm_taxa_serie(
         fim = converter_datas(fim).replace(day=1) if fim is not None else None
     return (
         _converter_para_taxa(_buscar_serie(SerieSGS.IGPM, inicio, fim, ultimos))
-        .select(periodo=pl.col("data").dt.strftime("%Y%m").cast(pl.Int64), taxa="taxa")
-        .sort("periodo")
+        .select(competencia=pl.col("data").dt.month_start(), taxa="taxa")
+        .sort("competencia")
     )
 
 

@@ -133,10 +133,8 @@ def _obter_fator_ipca(inicio: dt.date, fim: dt.date) -> Decimal:
     mes_inicial = inicio.replace(day=1) - dt.timedelta(days=1)
     mes_final = fim.replace(day=1) - dt.timedelta(days=1)
     df = _ipca.indice_serie(mes_inicial, mes_final)
-    periodo_inicial = int(mes_inicial.strftime("%Y%m"))
-    periodo_final = int(mes_final.strftime("%Y%m"))
-    indice_inicial = df.filter(pl.col("periodo") == periodo_inicial)
-    indice_final = df.filter(pl.col("periodo") == periodo_final)
+    indice_inicial = df.filter(pl.col("competencia") == mes_inicial.replace(day=1))
+    indice_final = df.filter(pl.col("competencia") == mes_final.replace(day=1))
     if indice_inicial.is_empty() or indice_final.is_empty():
         return Decimal("NaN")
     with localcontext(prec=_vna.PRECISAO_CALCULO):

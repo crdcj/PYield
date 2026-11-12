@@ -57,8 +57,8 @@ def test_pipeline_rmd(monkeypatch):
 
     resultado = yd.rmd(aba="1.3")
     esperado = pl.read_parquet(CAMINHO_PARQUET)
-    colunas_ordem = ["periodo", "grupo", "subgrupo", "titulo", "valor"]
-    resultado = resultado.filter(pl.col("periodo") <= esperado["periodo"].max())
+    colunas_ordem = ["competencia", "grupo", "subgrupo", "titulo", "valor"]
+    resultado = resultado.filter(pl.col("competencia") <= esperado["competencia"].max())
     assert resultado.sort(colunas_ordem).equals(esperado)
 
 
@@ -70,7 +70,7 @@ def test_aba_2_1_estrutura_e_valores(monkeypatch):
 
     df = yd.rmd(aba="2.1")
     assert df.columns == [
-        "periodo",
+        "competencia",
         "detentor",
         "tipo",
         "categoria",
@@ -78,7 +78,7 @@ def test_aba_2_1_estrutura_e_valores(monkeypatch):
         "valor",
     ]
 
-    df_mar_26 = df.filter(pl.col("periodo") == pl.date(2026, 3, 1))
+    df_mar_26 = df.filter(pl.col("competencia") == pl.date(2026, 3, 1))
 
     total_publico = df_mar_26.filter(pl.col("detentor") == "Público")["valor"].sum()
 

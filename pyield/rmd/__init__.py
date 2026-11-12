@@ -32,14 +32,14 @@ def rmd(aba: str) -> pl.DataFrame:
 
     Output Columns:
         Aba ``"1.3"``:
-            * periodo (Date): primeiro dia do mês de referência.
+            * competencia (Date): primeiro dia do mês de referência.
             * grupo (String): seção principal — ``"Emissões"`` ou ``"Resgates"``.
             * subgrupo (String): categoria dentro do grupo.
             * titulo (String): tipo de título ou ``null`` para subgrupos sem
                 detalhamento por título.
             * valor (Float64): valor em R$.
         Aba ``"2.1"``:
-            * periodo (Date): primeiro dia do mês de referência.
+            * competencia (Date): primeiro dia do mês de referência.
             * detentor (String): quem detém o estoque — ``"Público"`` ou
                 ``"Banco Central"``.
             * tipo (String): classificação da dívida — ``"DPMFi"`` (interna) ou

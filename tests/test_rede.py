@@ -292,7 +292,8 @@ def test_consulta_recupera_apos_falha_transitoria(monkeypatch, esperas):
     assert esperas == [ESPERA_RETRY]
 
 
-def test_ipca_projetado_preserva_connection_error_apos_retry(monkeypatch, esperas):
+@pytest.mark.parametrize("consultar", [yd.ipca.taxa_projetada, yd.igpm.taxa_projetada])
+def test_projecao_preserva_connection_error_apos_retry(monkeypatch, esperas, consultar):
     chamadas = []
 
     def enviar(self, requisicao, **kwargs):
@@ -302,7 +303,7 @@ def test_ipca_projetado_preserva_connection_error_apos_retry(monkeypatch, espera
     monkeypatch.setattr(requests.Session, "send", enviar)
 
     with pytest.raises(ConnectionError, match="ANBIMA"):
-        yd.ipca.taxa_projetada()
+        consultar()
 
     assert len(chamadas) == NUMERO_CONSULTAS
     assert esperas == [ESPERA_RETRY]

@@ -135,12 +135,12 @@ def test_igpm_serie_consulta_competencias_e_converte_percentuais(monkeypatch):
     resultado = yd.igpm.taxa_serie("15-01-2025", "20-02-2025")
 
     assert resultado.schema == {
-        "periodo": pl.Int64,
+        "competencia": pl.Date,
         "taxa": pl.Decimal(precision=18, scale=4),
     }
     assert resultado.to_dicts() == [
-        {"periodo": 202501, "taxa": Decimal("0.0027")},
-        {"periodo": 202502, "taxa": Decimal("-0.0050")},
+        {"competencia": dt.date(2025, 1, 1), "taxa": Decimal("0.0027")},
+        {"competencia": dt.date(2025, 2, 1), "taxa": Decimal("-0.0050")},
     ]
     assert len(urls) == 1
     assert urlparse(urls[0]).path == "/dados/serie/bcdata.sgs.189/dados"
@@ -173,7 +173,7 @@ def test_igpm_ultimos_tem_prioridade(monkeypatch):
     monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
 
     assert yd.igpm.taxa_serie("invalida", "invalida", ultimos=1).to_dicts() == [
-        {"periodo": 202501, "taxa": Decimal("0.0027")}
+        {"competencia": dt.date(2025, 1, 1), "taxa": Decimal("0.0027")}
     ]
 
 
@@ -184,7 +184,7 @@ def test_igpm_sem_dados(monkeypatch):
 
     assert resultado.is_empty()
     assert resultado.schema == {
-        "periodo": pl.Int64,
+        "competencia": pl.Date,
         "taxa": pl.Decimal(precision=18, scale=4),
     }
     assert yd.igpm.taxa("15-01-2025").is_nan()
@@ -209,6 +209,7 @@ def test_igpm_namespace_publico():
         "taxa_serie",
         "indice",
         "indice_serie",
+        "taxa_projetada",
         "calendario",
     ]
     assert yd.igpm.taxa is sgs.igpm_taxa
@@ -226,7 +227,7 @@ def test_igpm_fim_padrao_usa_hoje(monkeypatch):
     monkeypatch.setattr(sgs, "_chamar_api", chamar_api)
 
     assert yd.igpm.taxa_serie("15-02-2025").to_dicts() == [
-        {"periodo": 202502, "taxa": Decimal("0.0027")}
+        {"competencia": dt.date(2025, 2, 1), "taxa": Decimal("0.0027")}
     ]
 
 
@@ -240,7 +241,7 @@ def test_igpm_intervalo_invertido_nao_chama_api(monkeypatch):
 
     assert resultado.is_empty()
     assert resultado.schema == {
-        "periodo": pl.Int64,
+        "competencia": pl.Date,
         "taxa": pl.Decimal(precision=18, scale=4),
     }
 
@@ -278,7 +279,7 @@ def test_igpm_http_404_retorna_serie_vazia_decimal(monkeypatch):
 
     assert resultado.is_empty()
     assert resultado.schema == {
-        "periodo": pl.Int64,
+        "competencia": pl.Date,
         "taxa": pl.Decimal(precision=18, scale=4),
     }
 
@@ -303,11 +304,13 @@ def test_igpm_intervalo_em_blocos_com_dados_vazios(monkeypatch, todos_vazios):
         dt.date(2025, 2, 2),
     ]
     assert resultado.schema == {
-        "periodo": pl.Int64,
+        "competencia": pl.Date,
         "taxa": pl.Decimal(precision=18, scale=4),
     }
     assert resultado.to_dicts() == (
-        [] if todos_vazios else [{"periodo": 202503, "taxa": Decimal("0.0027")}]
+        []
+        if todos_vazios
+        else [{"competencia": dt.date(2025, 3, 1), "taxa": Decimal("0.0027")}]
     )
 
 

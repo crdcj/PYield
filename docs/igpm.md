@@ -18,8 +18,9 @@ A fonte é a FGV/Conjuntura Econômica, disponibilizada pelo
 [Ipeadata](https://www.ipeadata.gov.br/api/) na série `IGP12_IGPM12`.
 O retorno escalar usa `Decimal` com três casas e a coluna `indice` usa
 `Decimal(18, 3)`. A cobertura começa em **agosto de 1994**, base 100 da série.
-A coluna `periodo` identifica a competência no formato `YYYYMM`. O índice indisponível
-retorna `Decimal("NaN")` na consulta escalar.
+A coluna `competencia` (`Date`) identifica o mês pelo seu primeiro dia, como nas
+demais séries mensais da biblioteca. O índice indisponível retorna
+`Decimal("NaN")` na consulta escalar.
 
 O corte acompanha a base do índice: julho de 1994 ainda tem quatro casas
 decimais na fonte (`92.9684`); de agosto de 1994 em diante, três casas preservam
@@ -34,11 +35,27 @@ Para consultar os valores anteriores com sua precisão original, acesse a
 [série completa na API do Ipeadata](https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO='IGP12_IGPM12')).
 Essa consulta é feita diretamente na fonte, fora da API de índices do PYield.
 A biblioteca omite esses índices, em vez de retorná-los com precisão reduzida.
-A cobertura das taxas mensais segue a série SGS 189.
+A cobertura das taxas mensais segue a série SGS 189. A projeção da ANBIMA,
+em `yd.igpm.taxa_projetada().valor_projetado`, também retorna `Decimal` com
+quatro casas.
 
 Nas séries de índices, qualquer dia identifica o mês inteiro; os dois meses
 extremos são incluídos. `fim=None` usa a data atual no Brasil. Informe `inicio`
 ou `ultimos`; quando informado, `ultimos` tem prioridade sobre as datas.
+
+## Projeção vigente
+
+`yd.igpm.taxa_projetada()` retorna a projeção do IGP-M que vale hoje para a
+atualização do VNA, segundo o Grupo Consultivo Permanente Macroeconômico da
+ANBIMA. O objeto informa `competencia` (primeiro dia do mês de referência,
+como em `calendario`), `valor_projetado`, `data_coleta` e `data_validade`. A projeção divulgada no fim da tarde só é retornada a partir
+da sua data de validade. Entre a divulgação do índice fechado e a validade da
+primeira projeção do mês seguinte, nenhuma projeção está vigente e a função
+retorna `None`.
+
+```python
+projecao = yd.igpm.taxa_projetada()
+```
 
 ## Calendário de divulgação
 

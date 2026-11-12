@@ -4,6 +4,7 @@ Disponibiliza ``taxa``, ``taxa_serie``, ``indice``, ``indice_serie``,
 ``taxa_projetada`` e ``calendario``.
 """
 
+from pyield.anbima.projecoes import ipca_taxa_projetada as taxa_projetada
 from pyield.ipca._calendario import calendario
 from pyield.ipca.historico import (
     indice,
@@ -11,7 +12,6 @@ from pyield.ipca.historico import (
     taxa,
     taxa_serie,
 )
-from pyield.ipca.projetado import taxa_projetada
 
 __all__ = [
     "calendario",
