@@ -120,13 +120,17 @@ pelo push de uma tag `vX.Y.Z`. Localmente, basta preparar a versão:
 
 2. Escreva as notas em `docs/release-X.Y.Z.md` e atualize `docs/releases.md` e
    `mkdocs.yml`, conforme a seção anterior.
-3. Faça o commit, crie a tag e envie os dois:
+3. Faça o commit, crie a tag anotada e envie os dois:
 
     ```sh
     git commit -am "release: X.Y.Z"
-    git tag vX.Y.Z
+    git tag -a vX.Y.Z -m "PYield X.Y.Z"
     git push --follow-tags
     ```
+
+    O `--follow-tags` envia apenas tags anotadas. Uma tag leve
+    (`git tag vX.Y.Z`) fica só no repositório local, e o workflow não é
+    disparado; nesse caso, envie-a com `git push origin vX.Y.Z`.
 
 O workflow executa, em ordem:
 
