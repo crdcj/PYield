@@ -8,7 +8,7 @@ Esta versão reúne as duas fontes de leilões de TPF em `yd.tpf.leiloes`, com a
 
 Chamadas sem `fonte` continuam consultando o Tesouro Nacional, com os mesmos parâmetros, colunas e valores da 0.63.0. Com `fonte="bc"`, o resultado é o mesmo que `yd.tpf.leiloes_bcb` retornava: colunas, tipos e metodologia não mudam.
 
-Não há troca automática de fonte. As duas fontes diferem em colunas e em metodologia, por exemplo nos financeiros calculados a partir do PU médio e na cotação publicada pelo BCB para LFT e NTN-B até 10/06/2024. Se a fonte mudasse conforme a disponibilidade do Tesouro, a mesma chamada poderia retornar esquemas e valores diferentes. As diferenças estão documentadas nas notas de [`yd.tpf.leiloes`](<https://crdcj.github.io/PYield/tpf/#leiloes>).
+Não há troca automática de fonte. As duas fontes diferem em colunas e em metodologia, por exemplo nos financeiros calculados a partir do PU médio e na cotação publicada pelo BCB para LFT e NTN-B até 10/06/2024. Se a fonte mudasse conforme a disponibilidade do Tesouro, a mesma chamada poderia retornar esquemas e valores diferentes. As diferenças estão documentadas nas notas de [`yd.tpf.leiloes`](<https://crdcj.github.io/PYield/tpf/index.md#leiloes>).
 
 ### Migração
 

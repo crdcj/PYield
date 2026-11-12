@@ -193,7 +193,7 @@ yd.selic.meta("31-05-2024")  # Decimal: meta anual
 yd.vna.valor("LFT", "31-05-2024")  # -> 14903.011480
 ```
 
-Selic Over, Selic Meta, DI Over e PTAX preservam os valores publicados pelo Banco Central usando `Decimal`, sem passagem por `float`. As séries retornam colunas Polars `Decimal`; escalares sem dados retornam `Decimal("NaN")`. Para análises com ponto flutuante, a conversão é explícita com `float(valor)` ou `pl.col("taxa").cast(pl.Float64)`. Consulte as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>).
+Selic Over, Selic Meta, DI Over e PTAX preservam os valores publicados pelo Banco Central usando `Decimal`, sem passagem por `float`. As séries retornam colunas Polars `Decimal`; escalares sem dados retornam `Decimal("NaN")`. Para análises com ponto flutuante, a conversão é explícita com `float(valor)` ou `pl.col("taxa").cast(pl.Float64)`. Consulte as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>).
 
 ### 7\. Inflação (IPCA)
 
@@ -202,11 +202,11 @@ Obtenha dados de inflação do IBGE:
 ```python
 # Taxas mensais de IPCA
 df_ipca = yd.ipca.taxa_serie("01-01-2024", "01-03-2024")
-# Colunas: periodo, taxa
+# Colunas: competencia, taxa
 
 # Índices de IPCA
 df_indices = yd.ipca.indice_serie("01-01-2024", "01-03-2024")
-# Colunas: periodo, indice
+# Colunas: competencia, indice
 
 # Projeções futuras (quando disponíveis)
 df_proj = yd.ipca.taxa_projetada()

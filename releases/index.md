@@ -4,6 +4,8 @@ Cada versão tem uma página com as mudanças, o racional das decisões e as ori
 
 | Versão | Principais mudanças |
 | --- | --- |
+| [0.65.0](<https://crdcj.github.io/PYield/release-0.65.0/index.md>) | Projeção vigente de IPCA e IGP-M pela página de projeções da ANBIMA, com data de coleta e de validade, em `yd.ipca.taxa_projetada` e no novo `yd.igpm.taxa_projetada`; mês de referência das séries mensais como `competencia` (`Date`). |
+| [0.64.1](<https://crdcj.github.io/PYield/release-0.64.1/index.md>) | Timeout de leitura menor na primeira tentativa e dobrado na retentativa, com limites revistos por fonte; correção de `ComputeError` em `yd.cpm.contratos`. |
 | [0.64.0](<https://crdcj.github.io/PYield/release-0.64.0/index.md>) | Fonte explícita em `yd.tpf.leiloes` (`fonte="tn"` ou `fonte="bc"`) e remoção de `yd.tpf.leiloes_bcb`; taxas de `yd.tpf.secundario.mensal` em decimal; `nome_comercial` obrigatório em `yd.ntnb1.dv01`; erro para prazos conflitantes na curva zero e no interpolador; duration sem truncamento; ofertas de compra e venda de `yd.futuro.historico` na convenção da B3; correções em prêmio limpo, curvas zero e leilões. |
 | [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) | Escalas decimais por modalidade, série histórica de DI Over, números-índice no contexto de VNA e índices do IGP-M desde agosto de 1994. |
 | [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |

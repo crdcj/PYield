@@ -15,7 +15,7 @@ serie_diaria = yd.selic.over_serie(ultimos=5, anualizada=False)
 meta = yd.selic.meta("28-02-2025")
 ```
 
-As escalas foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#escalas-decimais-dos-indicadores>). As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+As escalas foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md#escalas-decimais-dos-indicadores>). As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 Indicadores da taxa Selic: `over`, `over_serie`, `meta` e `meta_serie`.
 

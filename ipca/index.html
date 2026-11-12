@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.1.0">
+      <meta name="generator" content="zensical-0.1.1">
     
     
       
@@ -42,7 +42,7 @@
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.ebb7f775.min.css">
       
       
 
@@ -339,6 +339,60 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.65.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.65.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.64.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.1
 
     
   </span>
@@ -1579,6 +1633,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#projecao-vigente" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Projeção vigente
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#calendario-de-divulgacao" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1902,6 +1967,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#projecao-vigente" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Projeção vigente
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#calendario-de-divulgacao" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2014,13 +2090,23 @@ use <code>.is_nan()</code> para verificar.</p>
 ANBIMA, em <code>yd.ipca.taxa_projetada().valor_projetado</code>, também retorna <code>Decimal</code>
 com quatro casas. A unidade é decimal: <code>Decimal("0.0045")</code> representa 0,45%.
 A taxa histórica indisponível retorna <code>Decimal("NaN")</code> na consulta escalar.</p>
+<h2 id="projecao-vigente">Projeção vigente</h2>
+<p><code>yd.ipca.taxa_projetada()</code> retorna a projeção do IPCA que vale hoje para a
+atualização do VNA, segundo o Grupo Consultivo Permanente Macroeconômico da
+ANBIMA. O objeto informa <code>competencia</code> (primeiro dia do mês de referência,
+como em <code>calendario</code>), <code>valor_projetado</code>, <code>data_coleta</code> e <code>data_validade</code>. A projeção divulgada no fim da tarde só é retornada a partir
+da sua data de validade. Entre a divulgação do índice fechado e a validade da
+primeira projeção do mês seguinte, nenhuma projeção está vigente e a função
+retorna <code>None</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">projecao</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa_projetada</span><span class="p">()</span>
+</span></code></pre></div>
 <h2 id="calendario-de-divulgacao">Calendário de divulgação</h2>
 <p><code>yd.ipca.calendario(ano)</code> consulta o calendário oficial do
 IBGE e retorna as colunas <code>competencia</code> e <code>data_divulgacao</code>, ambas <code>Date</code>.
 O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte.
 A data prevista não comprova publicação do índice e datas ausentes não são
 estimadas.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">calendario</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">calendario</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">calendario</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">calendario</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span>
 </span></code></pre></div>
 
 
@@ -2485,7 +2571,7 @@ tem prioridade sobre <code>inicio</code> e <code>fim</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>pl.DataFrame com colunas 'periodo' e 'indice'.</p>
+                <p>pl.DataFrame com colunas 'competencia' e 'indice'.</p>
               </div>
             </td>
           </tr>
@@ -2496,7 +2582,7 @@ tem prioridade sobre <code>inicio</code> e <code>fim</code>.</p>
 <details class="output-columns" open>
   <summary>Output Columns</summary>
   <ul>
-<li>periodo (Int64): período no formato YYYYMM.</li>
+<li>competencia (Date): primeiro dia do mês de referência.</li>
 <li>indice (Decimal(18, 2)): número-índice do IPCA.</li>
 </ul>
 </details>
@@ -2536,15 +2622,15 @@ preservando as duas casas decimais publicadas, sem passagem por float.</p>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Obter os números-índice do IPCA para o primeiro trimestre</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ipca</span><span class="o">.</span><span class="n">indice_serie</span><span class="p">(</span><span class="n">inicio</span><span class="o">=</span><span class="s2">"01-01-2025"</span><span class="p">,</span> <span class="n">fim</span><span class="o">=</span><span class="s2">"01-03-2025"</span><span class="p">)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">shape: (3, 2)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">┌─────────┬───────────────┐</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">│ periodo ┆ indice        │</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">│ ---     ┆ ---           │</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">│ i64     ┆ decimal[18,2] │</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">╞═════════╪═══════════════╡</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">│ 202501  ┆ 7111.86       │</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">│ 202502  ┆ 7205.03       │</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">│ 202503  ┆ 7245.38       │</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="go">└─────────┴───────────────┘</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">┌─────────────┬───────────────┐</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">│ competencia ┆ indice        │</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">│ ---         ┆ ---           │</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">│ date        ┆ decimal[18,2] │</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">╞═════════════╪═══════════════╡</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">│ 2025-01-01  ┆ 7111.86       │</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">│ 2025-02-01  ┆ 7205.03       │</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">│ 2025-03-01  ┆ 7245.38       │</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="go">└─────────────┴───────────────┘</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Obter o número-índice do IPCA do último mês</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">ipca</span><span class="o">.</span><span class="n">indice_serie</span><span class="p">(</span><span class="n">ultimos</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Obter os números-índice do IPCA dos últimos 3 meses</span>
@@ -2627,10 +2713,10 @@ preservando as duas casas decimais publicadas, sem passagem por float.</p>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-186"><a id="pyield.ipca.indice_serie--source--__codelineno-0-186" name="pyield.ipca.indice_serie--source--__codelineno-0-186"></a><span class="sd">            tem prioridade sobre ``inicio`` e ``fim``.</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-187"><a id="pyield.ipca.indice_serie--source--__codelineno-0-187" name="pyield.ipca.indice_serie--source--__codelineno-0-187"></a>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-188"><a id="pyield.ipca.indice_serie--source--__codelineno-0-188" name="pyield.ipca.indice_serie--source--__codelineno-0-188"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-189"><a id="pyield.ipca.indice_serie--source--__codelineno-0-189" name="pyield.ipca.indice_serie--source--__codelineno-0-189"></a><span class="sd">        pl.DataFrame com colunas 'periodo' e 'indice'.</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-189"><a id="pyield.ipca.indice_serie--source--__codelineno-0-189" name="pyield.ipca.indice_serie--source--__codelineno-0-189"></a><span class="sd">        pl.DataFrame com colunas 'competencia' e 'indice'.</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-190"><a id="pyield.ipca.indice_serie--source--__codelineno-0-190" name="pyield.ipca.indice_serie--source--__codelineno-0-190"></a>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-191"><a id="pyield.ipca.indice_serie--source--__codelineno-0-191" name="pyield.ipca.indice_serie--source--__codelineno-0-191"></a><span class="sd">    Output Columns:</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-192"><a id="pyield.ipca.indice_serie--source--__codelineno-0-192" name="pyield.ipca.indice_serie--source--__codelineno-0-192"></a><span class="sd">        * periodo (Int64): período no formato YYYYMM.</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-192"><a id="pyield.ipca.indice_serie--source--__codelineno-0-192" name="pyield.ipca.indice_serie--source--__codelineno-0-192"></a><span class="sd">        * competencia (Date): primeiro dia do mês de referência.</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-193"><a id="pyield.ipca.indice_serie--source--__codelineno-0-193" name="pyield.ipca.indice_serie--source--__codelineno-0-193"></a><span class="sd">        * indice (Decimal(18, 2)): número-índice do IPCA.</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-194"><a id="pyield.ipca.indice_serie--source--__codelineno-0-194" name="pyield.ipca.indice_serie--source--__codelineno-0-194"></a>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-195"><a id="pyield.ipca.indice_serie--source--__codelineno-0-195" name="pyield.ipca.indice_serie--source--__codelineno-0-195"></a><span class="sd">    Notes:</span>
@@ -2646,15 +2732,15 @@ preservando as duas casas decimais publicadas, sem passagem por float.</p>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-205"><a id="pyield.ipca.indice_serie--source--__codelineno-0-205" name="pyield.ipca.indice_serie--source--__codelineno-0-205"></a><span class="sd">        &gt;&gt;&gt; # Obter os números-índice do IPCA para o primeiro trimestre</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-206"><a id="pyield.ipca.indice_serie--source--__codelineno-0-206" name="pyield.ipca.indice_serie--source--__codelineno-0-206"></a><span class="sd">        &gt;&gt;&gt; ipca.indice_serie(inicio="01-01-2025", fim="01-03-2025")</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-207"><a id="pyield.ipca.indice_serie--source--__codelineno-0-207" name="pyield.ipca.indice_serie--source--__codelineno-0-207"></a><span class="sd">        shape: (3, 2)</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-208"><a id="pyield.ipca.indice_serie--source--__codelineno-0-208" name="pyield.ipca.indice_serie--source--__codelineno-0-208"></a><span class="sd">        ┌─────────┬───────────────┐</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-209"><a id="pyield.ipca.indice_serie--source--__codelineno-0-209" name="pyield.ipca.indice_serie--source--__codelineno-0-209"></a><span class="sd">        │ periodo ┆ indice        │</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-210"><a id="pyield.ipca.indice_serie--source--__codelineno-0-210" name="pyield.ipca.indice_serie--source--__codelineno-0-210"></a><span class="sd">        │ ---     ┆ ---           │</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-211"><a id="pyield.ipca.indice_serie--source--__codelineno-0-211" name="pyield.ipca.indice_serie--source--__codelineno-0-211"></a><span class="sd">        │ i64     ┆ decimal[18,2] │</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-212"><a id="pyield.ipca.indice_serie--source--__codelineno-0-212" name="pyield.ipca.indice_serie--source--__codelineno-0-212"></a><span class="sd">        ╞═════════╪═══════════════╡</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-213"><a id="pyield.ipca.indice_serie--source--__codelineno-0-213" name="pyield.ipca.indice_serie--source--__codelineno-0-213"></a><span class="sd">        │ 202501  ┆ 7111.86       │</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-214"><a id="pyield.ipca.indice_serie--source--__codelineno-0-214" name="pyield.ipca.indice_serie--source--__codelineno-0-214"></a><span class="sd">        │ 202502  ┆ 7205.03       │</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-215"><a id="pyield.ipca.indice_serie--source--__codelineno-0-215" name="pyield.ipca.indice_serie--source--__codelineno-0-215"></a><span class="sd">        │ 202503  ┆ 7245.38       │</span>
-</span><span id="pyield.ipca.indice_serie--source--__span-0-216"><a id="pyield.ipca.indice_serie--source--__codelineno-0-216" name="pyield.ipca.indice_serie--source--__codelineno-0-216"></a><span class="sd">        └─────────┴───────────────┘</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-208"><a id="pyield.ipca.indice_serie--source--__codelineno-0-208" name="pyield.ipca.indice_serie--source--__codelineno-0-208"></a><span class="sd">        ┌─────────────┬───────────────┐</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-209"><a id="pyield.ipca.indice_serie--source--__codelineno-0-209" name="pyield.ipca.indice_serie--source--__codelineno-0-209"></a><span class="sd">        │ competencia ┆ indice        │</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-210"><a id="pyield.ipca.indice_serie--source--__codelineno-0-210" name="pyield.ipca.indice_serie--source--__codelineno-0-210"></a><span class="sd">        │ ---         ┆ ---           │</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-211"><a id="pyield.ipca.indice_serie--source--__codelineno-0-211" name="pyield.ipca.indice_serie--source--__codelineno-0-211"></a><span class="sd">        │ date        ┆ decimal[18,2] │</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-212"><a id="pyield.ipca.indice_serie--source--__codelineno-0-212" name="pyield.ipca.indice_serie--source--__codelineno-0-212"></a><span class="sd">        ╞═════════════╪═══════════════╡</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-213"><a id="pyield.ipca.indice_serie--source--__codelineno-0-213" name="pyield.ipca.indice_serie--source--__codelineno-0-213"></a><span class="sd">        │ 2025-01-01  ┆ 7111.86       │</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-214"><a id="pyield.ipca.indice_serie--source--__codelineno-0-214" name="pyield.ipca.indice_serie--source--__codelineno-0-214"></a><span class="sd">        │ 2025-02-01  ┆ 7205.03       │</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-215"><a id="pyield.ipca.indice_serie--source--__codelineno-0-215" name="pyield.ipca.indice_serie--source--__codelineno-0-215"></a><span class="sd">        │ 2025-03-01  ┆ 7245.38       │</span>
+</span><span id="pyield.ipca.indice_serie--source--__span-0-216"><a id="pyield.ipca.indice_serie--source--__codelineno-0-216" name="pyield.ipca.indice_serie--source--__codelineno-0-216"></a><span class="sd">        └─────────────┴───────────────┘</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-217"><a id="pyield.ipca.indice_serie--source--__codelineno-0-217" name="pyield.ipca.indice_serie--source--__codelineno-0-217"></a><span class="sd">        &gt;&gt;&gt; # Obter o número-índice do IPCA do último mês</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-218"><a id="pyield.ipca.indice_serie--source--__codelineno-0-218" name="pyield.ipca.indice_serie--source--__codelineno-0-218"></a><span class="sd">        &gt;&gt;&gt; df = ipca.indice_serie(ultimos=1)</span>
 </span><span id="pyield.ipca.indice_serie--source--__span-0-219"><a id="pyield.ipca.indice_serie--source--__codelineno-0-219" name="pyield.ipca.indice_serie--source--__codelineno-0-219"></a><span class="sd">        &gt;&gt;&gt; # Obter os números-índice do IPCA dos últimos 3 meses</span>
@@ -2815,33 +2901,78 @@ preservando as duas casas decimais publicadas, sem passagem por float.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Obtém a projeção atual do IPCA no site da ANBIMA.</p>
-<p>A função baixa a planilha XLS de indicadores da ANBIMA e extrai os
-dados da projeção do IPCA.</p>
+        <p>Obtém a projeção do IPCA vigente hoje, segundo a ANBIMA.</p>
+<p>A função consulta a página de projeções do Grupo Consultivo Permanente
+Macroeconômico da ANBIMA e seleciona, entre as projeções do mês corrente,
+a de maior data de validade que não seja posterior à data de hoje no
+Brasil.</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
       <thead>
         <tr>
-<th>Name</th>          <th>Type</th>
+          <th>Type</th>
           <th>Description</th>
         </tr>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-<td><code>ProjecaoIndicador</code></td>            <td>
-                  <code><span title="pyield.ipca.projetado.ProjecaoIndicador">ProjecaoIndicador</span></code>
+            <td>
+                  <code><span title="pyield.anbima.projecoes.ProjecaoIndicador">ProjecaoIndicador</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Objeto contendo:
-- ultima_atualizacao (dt.datetime): Data e hora da última
-  atualização.
-- periodo_referencia (str): Período de referência no formato
-  "MMM/YY" (ex.: "mar/26").
+                <p>ProjecaoIndicador | None: Objeto contendo:
+- competencia (dt.date): Primeiro dia do mês de referência da
+  projeção (ex.: <code>dt.date(2026, 10, 1)</code>).
 - valor_projetado (Decimal): Valor projetado do IPCA em unidade
-  decimal, com quatro casas decimais (0.0045 representa 0,45%).</p>
+  decimal, com quatro casas decimais (0.0045 representa 0,45%).
+- data_coleta (dt.date): Dia em que a ANBIMA coletou as
+  projeções.
+- data_validade (dt.date): Data a partir da qual a projeção vale
+  para a atualização do Valor Nominal dos títulos indexados ao
+  IPCA.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pyield.anbima.projecoes.ProjecaoIndicador">ProjecaoIndicador</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Retorna <code>None</code> quando nenhuma projeção do mês corrente está</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pyield.anbima.projecoes.ProjecaoIndicador">ProjecaoIndicador</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>vigente, o que ocorre entre a divulgação do IPCA fechado e a data de</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pyield.anbima.projecoes.ProjecaoIndicador">ProjecaoIndicador</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>validade da primeira projeção do mês seguinte. Nesse intervalo, a</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pyield.anbima.projecoes.ProjecaoIndicador">ProjecaoIndicador</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>atualização do VNA usa o índice oficial.</p>
               </div>
             </td>
           </tr>
@@ -2874,8 +3005,7 @@ dados da projeção do IPCA.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Se os dados esperados não forem encontrados na
-planilha.</p>
+                <p>Se a página não tiver a estrutura esperada.</p>
               </div>
             </td>
           </tr>
@@ -2885,134 +3015,132 @@ planilha.</p>
 
 <details class="notes" open>
   <summary>Notes</summary>
-  <p>Requer conexão com a internet para acessar o site da ANBIMA.
-O valor é convertido da célula da planilha para Decimal, dividido por
+  <p>Fonte: ANBIMA, página "Projeções IPCA e IGP-M"
+(https://www.anbima.com.br/pt_br/informar/estatisticas/precos-e-indices/projecao-de-inflacao-gp-m.htm),
+lida do conteúdo que o portal carrega dinamicamente.</p>
+<p>A coleta ocorre no dia da divulgação do IPCA-15 e do IPCA fechado;
+o resultado é publicado por volta das 17h30 e passa a valer na data
+de validade informada pela ANBIMA. Uma projeção recém-divulgada só é
+retornada a partir da sua data de validade.</p>
+<p>O quadro de indicadores da ANBIMA (<code>indicadores.xls</code>) não é usado
+porque não informa a validade e pode permanecer com a projeção
+anterior depois que a nova já está vigente.</p>
+<p>O valor é convertido do texto da página para Decimal, dividido por
 100 e arredondado em quatro casas decimais, com empate para o par.</p>
 </details>
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ipca</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Obter a projeção atual do IPCA na ANBIMA</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa_projetada</span><span class="p">()</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">ProjecaoIndicador(ultima_atualizacao=..., periodo_referencia=..., valor_projetado=...)</span>
+    <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">projecao</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa_projetada</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">projecao</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">projecao</span><span class="o">.</span><span class="n">data_validade</span> <span class="o">&lt;=</span> <span class="n">yd</span><span class="o">.</span><span class="n">hoje</span><span class="p">()</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">True</span>
 </span></code></pre></div>
 
 
             <details class="mkdocstrings-source">
-              <summary>Source code in <code>pyield/ipca/projetado.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-50"> 50</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-51"> 51</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-52"> 52</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-53"> 53</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-54"> 54</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-55"> 55</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-56"> 56</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-57"> 57</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-58"> 58</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-59"> 59</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-60"> 60</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-61"> 61</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-62"> 62</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-63"> 63</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-64"> 64</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-65"> 65</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-66"> 66</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-67"> 67</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-68"> 68</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-69"> 69</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-70"> 70</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-71"> 71</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-72"> 72</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-73"> 73</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-74"> 74</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-75"> 75</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-76"> 76</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-77"> 77</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-78"> 78</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-79"> 79</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-80"> 80</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-81"> 81</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-82"> 82</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-83"> 83</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-84"> 84</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-85"> 85</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-86"> 86</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-87"> 87</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-88"> 88</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-89"> 89</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-90"> 90</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-91"> 91</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-92"> 92</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-93"> 93</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-94"> 94</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-95"> 95</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-96"> 96</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-97"> 97</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-98"> 98</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-99"> 99</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-100">100</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-101">101</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-102">102</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-103">103</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-104">104</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-105">105</a></span>
-<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-106">106</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ipca.taxa_projetada--source--__span-0-50"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-50" name="pyield.ipca.taxa_projetada--source--__codelineno-0-50"></a><span class="k">def</span><span class="w"> </span><span class="nf">taxa_projetada</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ProjecaoIndicador</span><span class="p">:</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-51"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-51" name="pyield.ipca.taxa_projetada--source--__codelineno-0-51"></a><span class="w">    </span><span class="sd">"""</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-52"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-52" name="pyield.ipca.taxa_projetada--source--__codelineno-0-52"></a><span class="sd">    Obtém a projeção atual do IPCA no site da ANBIMA.</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-53"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-53" name="pyield.ipca.taxa_projetada--source--__codelineno-0-53"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-54"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-54" name="pyield.ipca.taxa_projetada--source--__codelineno-0-54"></a><span class="sd">    A função baixa a planilha XLS de indicadores da ANBIMA e extrai os</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-55"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-55" name="pyield.ipca.taxa_projetada--source--__codelineno-0-55"></a><span class="sd">    dados da projeção do IPCA.</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-56"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-56" name="pyield.ipca.taxa_projetada--source--__codelineno-0-56"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-57"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-57" name="pyield.ipca.taxa_projetada--source--__codelineno-0-57"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-58"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-58" name="pyield.ipca.taxa_projetada--source--__codelineno-0-58"></a><span class="sd">        ProjecaoIndicador: Objeto contendo:</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-59"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-59" name="pyield.ipca.taxa_projetada--source--__codelineno-0-59"></a><span class="sd">            - ultima_atualizacao (dt.datetime): Data e hora da última</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-60"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-60" name="pyield.ipca.taxa_projetada--source--__codelineno-0-60"></a><span class="sd">              atualização.</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-61"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-61" name="pyield.ipca.taxa_projetada--source--__codelineno-0-61"></a><span class="sd">            - periodo_referencia (str): Período de referência no formato</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-62"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-62" name="pyield.ipca.taxa_projetada--source--__codelineno-0-62"></a><span class="sd">              "MMM/YY" (ex.: "mar/26").</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-63"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-63" name="pyield.ipca.taxa_projetada--source--__codelineno-0-63"></a><span class="sd">            - valor_projetado (Decimal): Valor projetado do IPCA em unidade</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-64"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-64" name="pyield.ipca.taxa_projetada--source--__codelineno-0-64"></a><span class="sd">              decimal, com quatro casas decimais (0.0045 representa 0,45%).</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-65"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-65" name="pyield.ipca.taxa_projetada--source--__codelineno-0-65"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-66"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-66" name="pyield.ipca.taxa_projetada--source--__codelineno-0-66"></a><span class="sd">    Raises:</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-67"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-67" name="pyield.ipca.taxa_projetada--source--__codelineno-0-67"></a><span class="sd">        ConnectionError: Se houver erro de conexão com o site da ANBIMA.</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-68"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-68" name="pyield.ipca.taxa_projetada--source--__codelineno-0-68"></a><span class="sd">        ValueError: Se os dados esperados não forem encontrados na</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-69"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-69" name="pyield.ipca.taxa_projetada--source--__codelineno-0-69"></a><span class="sd">            planilha.</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-70"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-70" name="pyield.ipca.taxa_projetada--source--__codelineno-0-70"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-71"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-71" name="pyield.ipca.taxa_projetada--source--__codelineno-0-71"></a><span class="sd">    Notes:</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-72"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-72" name="pyield.ipca.taxa_projetada--source--__codelineno-0-72"></a><span class="sd">        Requer conexão com a internet para acessar o site da ANBIMA.</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-73"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-73" name="pyield.ipca.taxa_projetada--source--__codelineno-0-73"></a><span class="sd">        O valor é convertido da célula da planilha para Decimal, dividido por</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-74"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-74" name="pyield.ipca.taxa_projetada--source--__codelineno-0-74"></a><span class="sd">        100 e arredondado em quatro casas decimais, com empate para o par.</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-75"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-75" name="pyield.ipca.taxa_projetada--source--__codelineno-0-75"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-76"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-76" name="pyield.ipca.taxa_projetada--source--__codelineno-0-76"></a><span class="sd">    Examples:</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-77"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-77" name="pyield.ipca.taxa_projetada--source--__codelineno-0-77"></a><span class="sd">        &gt;&gt;&gt; from pyield import ipca</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-78"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-78" name="pyield.ipca.taxa_projetada--source--__codelineno-0-78"></a><span class="sd">        &gt;&gt;&gt; # Obter a projeção atual do IPCA na ANBIMA</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-79"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-79" name="pyield.ipca.taxa_projetada--source--__codelineno-0-79"></a><span class="sd">        &gt;&gt;&gt; ipca.taxa_projetada()</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-80"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-80" name="pyield.ipca.taxa_projetada--source--__codelineno-0-80"></a><span class="sd">        ProjecaoIndicador(ultima_atualizacao=..., periodo_referencia=..., valor_projetado=...)</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-81"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-81" name="pyield.ipca.taxa_projetada--source--__codelineno-0-81"></a><span class="sd">    """</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-82"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-82" name="pyield.ipca.taxa_projetada--source--__codelineno-0-82"></a>    <span class="n">conteudo</span> <span class="o">=</span> <span class="n">_baixar_planilha</span><span class="p">()</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-83"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-83" name="pyield.ipca.taxa_projetada--source--__codelineno-0-83"></a>    <span class="n">df</span> <span class="o">=</span> <span class="n">ler_sem_cabecalho</span><span class="p">(</span><span class="n">conteudo</span><span class="p">)</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-84"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-84" name="pyield.ipca.taxa_projetada--source--__codelineno-0-84"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-85"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-85" name="pyield.ipca.taxa_projetada--source--__codelineno-0-85"></a>    <span class="c1"># Linha 0: "Data e Hora da Última Atualização: DD/MM/YYYY - HH:MM h"</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-86"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-86" name="pyield.ipca.taxa_projetada--source--__codelineno-0-86"></a>    <span class="n">texto_atualizacao</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"column_1"</span><span class="p">)</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-87"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-87" name="pyield.ipca.taxa_projetada--source--__codelineno-0-87"></a>    <span class="n">ultima_atualizacao</span> <span class="o">=</span> <span class="n">_extrair_datetime</span><span class="p">(</span><span class="n">texto_atualizacao</span><span class="p">)</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-88"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-88" name="pyield.ipca.taxa_projetada--source--__codelineno-0-88"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-89"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-89" name="pyield.ipca.taxa_projetada--source--__codelineno-0-89"></a>    <span class="c1"># Linha do IPCA: column_1 começa com "IPCA" e column_2 com "Projeção"</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-90"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-90" name="pyield.ipca.taxa_projetada--source--__codelineno-0-90"></a>    <span class="n">linha_ipca</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-91"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-91" name="pyield.ipca.taxa_projetada--source--__codelineno-0-91"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"column_1"</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">starts_with</span><span class="p">(</span><span class="s2">"IPCA"</span><span class="p">),</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-92"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-92" name="pyield.ipca.taxa_projetada--source--__codelineno-0-92"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"column_2"</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">starts_with</span><span class="p">(</span><span class="s2">"Projeção"</span><span class="p">),</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-93"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-93" name="pyield.ipca.taxa_projetada--source--__codelineno-0-93"></a>    <span class="p">)</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-94"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-94" name="pyield.ipca.taxa_projetada--source--__codelineno-0-94"></a>    <span class="k">if</span> <span class="n">linha_ipca</span><span class="o">.</span><span class="n">is_empty</span><span class="p">():</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-95"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-95" name="pyield.ipca.taxa_projetada--source--__codelineno-0-95"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Não foi possível encontrar a projeção do IPCA na planilha."</span><span class="p">)</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-96"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-96" name="pyield.ipca.taxa_projetada--source--__codelineno-0-96"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-97"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-97" name="pyield.ipca.taxa_projetada--source--__codelineno-0-97"></a>    <span class="n">periodo_referencia</span> <span class="o">=</span> <span class="n">_extrair_periodo</span><span class="p">(</span><span class="n">linha_ipca</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"column_2"</span><span class="p">))</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-98"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-98" name="pyield.ipca.taxa_projetada--source--__codelineno-0-98"></a>    <span class="n">valor_projetado</span> <span class="o">=</span> <span class="p">(</span><span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">linha_ipca</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"column_3"</span><span class="p">)))</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-99"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-99" name="pyield.ipca.taxa_projetada--source--__codelineno-0-99"></a>        <span class="n">Decimal</span><span class="p">(</span><span class="s2">"0.0001"</span><span class="p">),</span> <span class="n">rounding</span><span class="o">=</span><span class="n">ROUND_HALF_EVEN</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-100"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-100" name="pyield.ipca.taxa_projetada--source--__codelineno-0-100"></a>    <span class="p">)</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-101"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-101" name="pyield.ipca.taxa_projetada--source--__codelineno-0-101"></a>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-102"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-102" name="pyield.ipca.taxa_projetada--source--__codelineno-0-102"></a>    <span class="k">return</span> <span class="n">ProjecaoIndicador</span><span class="p">(</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-103"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-103" name="pyield.ipca.taxa_projetada--source--__codelineno-0-103"></a>        <span class="n">ultima_atualizacao</span><span class="o">=</span><span class="n">ultima_atualizacao</span><span class="p">,</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-104"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-104" name="pyield.ipca.taxa_projetada--source--__codelineno-0-104"></a>        <span class="n">periodo_referencia</span><span class="o">=</span><span class="n">periodo_referencia</span><span class="p">,</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-105"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-105" name="pyield.ipca.taxa_projetada--source--__codelineno-0-105"></a>        <span class="n">valor_projetado</span><span class="o">=</span><span class="n">valor_projetado</span><span class="p">,</span>
-</span><span id="pyield.ipca.taxa_projetada--source--__span-0-106"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-106" name="pyield.ipca.taxa_projetada--source--__codelineno-0-106"></a>    <span class="p">)</span>
+              <summary>Source code in <code>pyield/anbima/projecoes.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-130">130</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-131">131</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-132">132</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-133">133</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-134">134</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-135">135</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-136">136</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-137">137</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-138">138</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-139">139</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-140">140</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-141">141</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-142">142</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-143">143</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-144">144</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-145">145</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-146">146</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-147">147</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-148">148</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-149">149</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-150">150</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-151">151</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-152">152</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-153">153</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-154">154</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-155">155</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-156">156</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-157">157</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-158">158</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-159">159</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-160">160</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-161">161</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-162">162</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-163">163</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-164">164</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-165">165</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-166">166</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-167">167</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-168">168</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-169">169</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-170">170</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-171">171</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-172">172</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-173">173</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-174">174</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-175">175</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-176">176</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-177">177</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-178">178</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-179">179</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-180">180</a></span>
+<span class="normal"><a href="#pyield.ipca.taxa_projetada--source--__codelineno-0-181">181</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ipca.taxa_projetada--source--__span-0-130"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-130" name="pyield.ipca.taxa_projetada--source--__codelineno-0-130"></a><span class="k">def</span><span class="w"> </span><span class="nf">ipca_taxa_projetada</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ProjecaoIndicador</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-131"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-131" name="pyield.ipca.taxa_projetada--source--__codelineno-0-131"></a><span class="w">    </span><span class="sd">"""Obtém a projeção do IPCA vigente hoje, segundo a ANBIMA.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-132"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-132" name="pyield.ipca.taxa_projetada--source--__codelineno-0-132"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-133"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-133" name="pyield.ipca.taxa_projetada--source--__codelineno-0-133"></a><span class="sd">    A função consulta a página de projeções do Grupo Consultivo Permanente</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-134"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-134" name="pyield.ipca.taxa_projetada--source--__codelineno-0-134"></a><span class="sd">    Macroeconômico da ANBIMA e seleciona, entre as projeções do mês corrente,</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-135"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-135" name="pyield.ipca.taxa_projetada--source--__codelineno-0-135"></a><span class="sd">    a de maior data de validade que não seja posterior à data de hoje no</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-136"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-136" name="pyield.ipca.taxa_projetada--source--__codelineno-0-136"></a><span class="sd">    Brasil.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-137"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-137" name="pyield.ipca.taxa_projetada--source--__codelineno-0-137"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-138"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-138" name="pyield.ipca.taxa_projetada--source--__codelineno-0-138"></a><span class="sd">    Returns:</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-139"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-139" name="pyield.ipca.taxa_projetada--source--__codelineno-0-139"></a><span class="sd">        ProjecaoIndicador | None: Objeto contendo:</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-140"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-140" name="pyield.ipca.taxa_projetada--source--__codelineno-0-140"></a><span class="sd">            - competencia (dt.date): Primeiro dia do mês de referência da</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-141"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-141" name="pyield.ipca.taxa_projetada--source--__codelineno-0-141"></a><span class="sd">              projeção (ex.: ``dt.date(2026, 10, 1)``).</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-142"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-142" name="pyield.ipca.taxa_projetada--source--__codelineno-0-142"></a><span class="sd">            - valor_projetado (Decimal): Valor projetado do IPCA em unidade</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-143"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-143" name="pyield.ipca.taxa_projetada--source--__codelineno-0-143"></a><span class="sd">              decimal, com quatro casas decimais (0.0045 representa 0,45%).</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-144"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-144" name="pyield.ipca.taxa_projetada--source--__codelineno-0-144"></a><span class="sd">            - data_coleta (dt.date): Dia em que a ANBIMA coletou as</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-145"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-145" name="pyield.ipca.taxa_projetada--source--__codelineno-0-145"></a><span class="sd">              projeções.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-146"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-146" name="pyield.ipca.taxa_projetada--source--__codelineno-0-146"></a><span class="sd">            - data_validade (dt.date): Data a partir da qual a projeção vale</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-147"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-147" name="pyield.ipca.taxa_projetada--source--__codelineno-0-147"></a><span class="sd">              para a atualização do Valor Nominal dos títulos indexados ao</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-148"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-148" name="pyield.ipca.taxa_projetada--source--__codelineno-0-148"></a><span class="sd">              IPCA.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-149"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-149" name="pyield.ipca.taxa_projetada--source--__codelineno-0-149"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-150"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-150" name="pyield.ipca.taxa_projetada--source--__codelineno-0-150"></a><span class="sd">        Retorna ``None`` quando nenhuma projeção do mês corrente está</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-151"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-151" name="pyield.ipca.taxa_projetada--source--__codelineno-0-151"></a><span class="sd">        vigente, o que ocorre entre a divulgação do IPCA fechado e a data de</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-152"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-152" name="pyield.ipca.taxa_projetada--source--__codelineno-0-152"></a><span class="sd">        validade da primeira projeção do mês seguinte. Nesse intervalo, a</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-153"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-153" name="pyield.ipca.taxa_projetada--source--__codelineno-0-153"></a><span class="sd">        atualização do VNA usa o índice oficial.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-154"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-154" name="pyield.ipca.taxa_projetada--source--__codelineno-0-154"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-155"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-155" name="pyield.ipca.taxa_projetada--source--__codelineno-0-155"></a><span class="sd">    Raises:</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-156"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-156" name="pyield.ipca.taxa_projetada--source--__codelineno-0-156"></a><span class="sd">        ConnectionError: Se houver erro de conexão com o site da ANBIMA.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-157"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-157" name="pyield.ipca.taxa_projetada--source--__codelineno-0-157"></a><span class="sd">        ValueError: Se a página não tiver a estrutura esperada.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-158"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-158" name="pyield.ipca.taxa_projetada--source--__codelineno-0-158"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-159"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-159" name="pyield.ipca.taxa_projetada--source--__codelineno-0-159"></a><span class="sd">    Notes:</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-160"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-160" name="pyield.ipca.taxa_projetada--source--__codelineno-0-160"></a><span class="sd">        Fonte: ANBIMA, página "Projeções IPCA e IGP-M"</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-161"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-161" name="pyield.ipca.taxa_projetada--source--__codelineno-0-161"></a><span class="sd">        (https://www.anbima.com.br/pt_br/informar/estatisticas/precos-e-indices/projecao-de-inflacao-gp-m.htm),</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-162"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-162" name="pyield.ipca.taxa_projetada--source--__codelineno-0-162"></a><span class="sd">        lida do conteúdo que o portal carrega dinamicamente.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-163"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-163" name="pyield.ipca.taxa_projetada--source--__codelineno-0-163"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-164"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-164" name="pyield.ipca.taxa_projetada--source--__codelineno-0-164"></a><span class="sd">        A coleta ocorre no dia da divulgação do IPCA-15 e do IPCA fechado;</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-165"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-165" name="pyield.ipca.taxa_projetada--source--__codelineno-0-165"></a><span class="sd">        o resultado é publicado por volta das 17h30 e passa a valer na data</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-166"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-166" name="pyield.ipca.taxa_projetada--source--__codelineno-0-166"></a><span class="sd">        de validade informada pela ANBIMA. Uma projeção recém-divulgada só é</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-167"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-167" name="pyield.ipca.taxa_projetada--source--__codelineno-0-167"></a><span class="sd">        retornada a partir da sua data de validade.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-168"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-168" name="pyield.ipca.taxa_projetada--source--__codelineno-0-168"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-169"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-169" name="pyield.ipca.taxa_projetada--source--__codelineno-0-169"></a><span class="sd">        O quadro de indicadores da ANBIMA (``indicadores.xls``) não é usado</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-170"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-170" name="pyield.ipca.taxa_projetada--source--__codelineno-0-170"></a><span class="sd">        porque não informa a validade e pode permanecer com a projeção</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-171"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-171" name="pyield.ipca.taxa_projetada--source--__codelineno-0-171"></a><span class="sd">        anterior depois que a nova já está vigente.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-172"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-172" name="pyield.ipca.taxa_projetada--source--__codelineno-0-172"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-173"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-173" name="pyield.ipca.taxa_projetada--source--__codelineno-0-173"></a><span class="sd">        O valor é convertido do texto da página para Decimal, dividido por</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-174"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-174" name="pyield.ipca.taxa_projetada--source--__codelineno-0-174"></a><span class="sd">        100 e arredondado em quatro casas decimais, com empate para o par.</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-175"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-175" name="pyield.ipca.taxa_projetada--source--__codelineno-0-175"></a>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-176"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-176" name="pyield.ipca.taxa_projetada--source--__codelineno-0-176"></a><span class="sd">    Examples:</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-177"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-177" name="pyield.ipca.taxa_projetada--source--__codelineno-0-177"></a><span class="sd">        &gt;&gt;&gt; projecao = yd.ipca.taxa_projetada()</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-178"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-178" name="pyield.ipca.taxa_projetada--source--__codelineno-0-178"></a><span class="sd">        &gt;&gt;&gt; projecao is None or projecao.data_validade &lt;= yd.hoje()</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-179"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-179" name="pyield.ipca.taxa_projetada--source--__codelineno-0-179"></a><span class="sd">        True</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-180"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-180" name="pyield.ipca.taxa_projetada--source--__codelineno-0-180"></a><span class="sd">    """</span>
+</span><span id="pyield.ipca.taxa_projetada--source--__span-0-181"><a id="pyield.ipca.taxa_projetada--source--__codelineno-0-181" name="pyield.ipca.taxa_projetada--source--__codelineno-0-181"></a>    <span class="k">return</span> <span class="n">_projecao_vigente</span><span class="p">(</span><span class="s2">"IPCA"</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3116,7 +3244,7 @@ tem prioridade sobre <code>inicio</code> e <code>fim</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>pl.DataFrame com colunas 'periodo' e 'taxa' (decimal).</p>
+                <p>pl.DataFrame com colunas 'competencia' e 'taxa' (decimal).</p>
               </div>
             </td>
           </tr>
@@ -3127,7 +3255,7 @@ tem prioridade sobre <code>inicio</code> e <code>fim</code>.</p>
 <details class="output-columns" open>
   <summary>Output Columns</summary>
   <ul>
-<li>periodo (Int64): período no formato YYYYMM.</li>
+<li>competencia (Date): primeiro dia do mês de referência.</li>
 <li>taxa (Decimal(18, 4)): taxa mensal em decimal (ex: 0.0016 = 0,16%).</li>
 </ul>
 </details>
@@ -3166,15 +3294,15 @@ para Decimal e divididos por 100, sem passagem por float.</p>
     <div class="language-pycon highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ipca</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa_serie</span><span class="p">(</span><span class="s2">"01-01-2025"</span><span class="p">,</span> <span class="s2">"01-03-2025"</span><span class="p">)</span>  <span class="c1"># decimal (0.0016 = 0,16%)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">shape: (3, 2)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">┌─────────┬───────────────┐</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">│ periodo ┆ taxa          │</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">│ ---     ┆ ---           │</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">│ i64     ┆ decimal[18,4] │</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">╞═════════╪═══════════════╡</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">│ 202501  ┆ 0.0016        │</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">│ 202502  ┆ 0.0131        │</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">│ 202503  ┆ 0.0056        │</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">└─────────┴───────────────┘</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="go">┌─────────────┬───────────────┐</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">│ competencia ┆ taxa          │</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">│ ---         ┆ ---           │</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="go">│ date        ┆ decimal[18,4] │</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">╞═════════════╪═══════════════╡</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">│ 2025-01-01  ┆ 0.0016        │</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">│ 2025-02-01  ┆ 0.0131        │</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">│ 2025-03-01  ┆ 0.0056        │</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">└─────────────┴───────────────┘</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Obter a taxa do IPCA do último mês</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">ipca</span><span class="o">.</span><span class="n">taxa_serie</span><span class="p">(</span><span class="n">ultimos</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Obter as taxas do IPCA dos últimos 3 meses</span>
@@ -3262,10 +3390,10 @@ para Decimal e divididos por 100, sem passagem por float.</p>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-102"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-102" name="pyield.ipca.taxa_serie--source--__codelineno-0-102"></a><span class="sd">            tem prioridade sobre ``inicio`` e ``fim``.</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-103"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-103" name="pyield.ipca.taxa_serie--source--__codelineno-0-103"></a>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-104"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-104" name="pyield.ipca.taxa_serie--source--__codelineno-0-104"></a><span class="sd">    Returns:</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-105"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-105" name="pyield.ipca.taxa_serie--source--__codelineno-0-105"></a><span class="sd">        pl.DataFrame com colunas 'periodo' e 'taxa' (decimal).</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-105"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-105" name="pyield.ipca.taxa_serie--source--__codelineno-0-105"></a><span class="sd">        pl.DataFrame com colunas 'competencia' e 'taxa' (decimal).</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-106"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-106" name="pyield.ipca.taxa_serie--source--__codelineno-0-106"></a>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-107"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-107" name="pyield.ipca.taxa_serie--source--__codelineno-0-107"></a><span class="sd">    Output Columns:</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-108"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-108" name="pyield.ipca.taxa_serie--source--__codelineno-0-108"></a><span class="sd">        * periodo (Int64): período no formato YYYYMM.</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-108"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-108" name="pyield.ipca.taxa_serie--source--__codelineno-0-108"></a><span class="sd">        * competencia (Date): primeiro dia do mês de referência.</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-109"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-109" name="pyield.ipca.taxa_serie--source--__codelineno-0-109"></a><span class="sd">        * taxa (Decimal(18, 4)): taxa mensal em decimal (ex: 0.0016 = 0,16%).</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-110"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-110" name="pyield.ipca.taxa_serie--source--__codelineno-0-110"></a>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-111"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-111" name="pyield.ipca.taxa_serie--source--__codelineno-0-111"></a><span class="sd">    Notes:</span>
@@ -3280,22 +3408,22 @@ para Decimal e divididos por 100, sem passagem por float.</p>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-120"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-120" name="pyield.ipca.taxa_serie--source--__codelineno-0-120"></a><span class="sd">        &gt;&gt;&gt; from pyield import ipca</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-121"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-121" name="pyield.ipca.taxa_serie--source--__codelineno-0-121"></a><span class="sd">        &gt;&gt;&gt; ipca.taxa_serie("01-01-2025", "01-03-2025")  # decimal (0.0016 = 0,16%)</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-122"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-122" name="pyield.ipca.taxa_serie--source--__codelineno-0-122"></a><span class="sd">        shape: (3, 2)</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-123"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-123" name="pyield.ipca.taxa_serie--source--__codelineno-0-123"></a><span class="sd">        ┌─────────┬───────────────┐</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-124"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-124" name="pyield.ipca.taxa_serie--source--__codelineno-0-124"></a><span class="sd">        │ periodo ┆ taxa          │</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-125"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-125" name="pyield.ipca.taxa_serie--source--__codelineno-0-125"></a><span class="sd">        │ ---     ┆ ---           │</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-126"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-126" name="pyield.ipca.taxa_serie--source--__codelineno-0-126"></a><span class="sd">        │ i64     ┆ decimal[18,4] │</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-127"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-127" name="pyield.ipca.taxa_serie--source--__codelineno-0-127"></a><span class="sd">        ╞═════════╪═══════════════╡</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-128"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-128" name="pyield.ipca.taxa_serie--source--__codelineno-0-128"></a><span class="sd">        │ 202501  ┆ 0.0016        │</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-129"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-129" name="pyield.ipca.taxa_serie--source--__codelineno-0-129"></a><span class="sd">        │ 202502  ┆ 0.0131        │</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-130"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-130" name="pyield.ipca.taxa_serie--source--__codelineno-0-130"></a><span class="sd">        │ 202503  ┆ 0.0056        │</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-131"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-131" name="pyield.ipca.taxa_serie--source--__codelineno-0-131"></a><span class="sd">        └─────────┴───────────────┘</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-123"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-123" name="pyield.ipca.taxa_serie--source--__codelineno-0-123"></a><span class="sd">        ┌─────────────┬───────────────┐</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-124"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-124" name="pyield.ipca.taxa_serie--source--__codelineno-0-124"></a><span class="sd">        │ competencia ┆ taxa          │</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-125"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-125" name="pyield.ipca.taxa_serie--source--__codelineno-0-125"></a><span class="sd">        │ ---         ┆ ---           │</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-126"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-126" name="pyield.ipca.taxa_serie--source--__codelineno-0-126"></a><span class="sd">        │ date        ┆ decimal[18,4] │</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-127"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-127" name="pyield.ipca.taxa_serie--source--__codelineno-0-127"></a><span class="sd">        ╞═════════════╪═══════════════╡</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-128"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-128" name="pyield.ipca.taxa_serie--source--__codelineno-0-128"></a><span class="sd">        │ 2025-01-01  ┆ 0.0016        │</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-129"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-129" name="pyield.ipca.taxa_serie--source--__codelineno-0-129"></a><span class="sd">        │ 2025-02-01  ┆ 0.0131        │</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-130"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-130" name="pyield.ipca.taxa_serie--source--__codelineno-0-130"></a><span class="sd">        │ 2025-03-01  ┆ 0.0056        │</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-131"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-131" name="pyield.ipca.taxa_serie--source--__codelineno-0-131"></a><span class="sd">        └─────────────┴───────────────┘</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-132"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-132" name="pyield.ipca.taxa_serie--source--__codelineno-0-132"></a><span class="sd">        &gt;&gt;&gt; # Obter a taxa do IPCA do último mês</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-133"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-133" name="pyield.ipca.taxa_serie--source--__codelineno-0-133"></a><span class="sd">        &gt;&gt;&gt; df = ipca.taxa_serie(ultimos=1)</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-134"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-134" name="pyield.ipca.taxa_serie--source--__codelineno-0-134"></a><span class="sd">        &gt;&gt;&gt; # Obter as taxas do IPCA dos últimos 3 meses</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-135"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-135" name="pyield.ipca.taxa_serie--source--__codelineno-0-135"></a><span class="sd">        &gt;&gt;&gt; df = ipca.taxa_serie(ultimos=3)</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-136"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-136" name="pyield.ipca.taxa_serie--source--__codelineno-0-136"></a><span class="sd">    """</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-137"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-137" name="pyield.ipca.taxa_serie--source--__codelineno-0-137"></a>    <span class="k">return</span> <span class="n">_buscar_serie</span><span class="p">(</span><span class="n">inicio</span><span class="p">,</span> <span class="n">fim</span><span class="p">,</span> <span class="n">ultimos</span><span class="p">,</span> <span class="n">_VAR_TAXA</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
-</span><span id="pyield.ipca.taxa_serie--source--__span-0-138"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-138" name="pyield.ipca.taxa_serie--source--__codelineno-0-138"></a>        <span class="s2">"periodo"</span><span class="p">,</span>
+</span><span id="pyield.ipca.taxa_serie--source--__span-0-138"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-138" name="pyield.ipca.taxa_serie--source--__codelineno-0-138"></a>        <span class="s2">"competencia"</span><span class="p">,</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-139"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-139" name="pyield.ipca.taxa_serie--source--__codelineno-0-139"></a>        <span class="c1"># A divisão decimal do Polars preserva a escala do numerador.</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-140"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-140" name="pyield.ipca.taxa_serie--source--__codelineno-0-140"></a>        <span class="n">taxa</span><span class="o">=</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"valor"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Decimal</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span>
 </span><span id="pyield.ipca.taxa_serie--source--__span-0-141"><a id="pyield.ipca.taxa_serie--source--__codelineno-0-141" name="pyield.ipca.taxa_serie--source--__codelineno-0-141"></a>            <span class="n">pl</span><span class="o">.</span><span class="n">Decimal</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
@@ -3392,7 +3520,7 @@ para Decimal e divididos por 100, sem passagem por float.</p>
       <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant","content.action.copy"],"redirect":null,"search":"../assets/javascripts/workers/search.719e0d91.min.js","tags":null,"translations":{"clipboard.copied":"Copiado para área de transferência","clipboard.copy":"Copiar para área de transferência","clipboard.error":"Could not copy to clipboard","search.result.more.one":"mais 1 nesta página","search.result.more.other":"# mais nesta página","search.result.none":"Nenhum documento encontrado","search.result.one":"1 documento encontrado","search.result.other":"# documentos encontrados","search.result.placeholder":"Digite para iniciar a busca","search.result.term.missing":"Ausente","select.version":"Selecione a versão"},"version":null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d31f0ffa.min.js"></script>
+      <script src="../assets/javascripts/bundle.3cb411a8.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

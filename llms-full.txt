@@ -120,6 +120,7 @@ yd.igpm
 ├── indice_serie(inicio=None, fim=None, *, ultimos=None)
 ├── taxa(data)
 ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
+├── taxa_projetada()
 └── calendario(ano)
 ```
 
@@ -539,7 +540,7 @@ yd.selic.meta("31-05-2024")  # Decimal: meta anual
 yd.vna.valor("LFT", "31-05-2024")  # -> 14903.011480
 ```
 
-Selic Over, Selic Meta, DI Over e PTAX preservam os valores publicados pelo Banco Central usando `Decimal`, sem passagem por `float`. As séries retornam colunas Polars `Decimal`; escalares sem dados retornam `Decimal("NaN")`. Para análises com ponto flutuante, a conversão é explícita com `float(valor)` ou `pl.col("taxa").cast(pl.Float64)`. Consulte as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>).
+Selic Over, Selic Meta, DI Over e PTAX preservam os valores publicados pelo Banco Central usando `Decimal`, sem passagem por `float`. As séries retornam colunas Polars `Decimal`; escalares sem dados retornam `Decimal("NaN")`. Para análises com ponto flutuante, a conversão é explícita com `float(valor)` ou `pl.col("taxa").cast(pl.Float64)`. Consulte as [notas da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>).
 
 ### 7\. Inflação (IPCA)
 
@@ -548,11 +549,11 @@ Obtenha dados de inflação do IBGE:
 ```python
 # Taxas mensais de IPCA
 df_ipca = yd.ipca.taxa_serie("01-01-2024", "01-03-2024")
-# Colunas: periodo, taxa
+# Colunas: competencia, taxa
 
 # Índices de IPCA
 df_indices = yd.ipca.indice_serie("01-01-2024", "01-03-2024")
-# Colunas: periodo, indice
+# Colunas: competencia, indice
 
 # Projeções futuras (quando disponíveis)
 df_proj = yd.ipca.taxa_projetada()
@@ -789,7 +790,7 @@ Returns:
 
 **Notes**
 
-Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503 ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo. Retry-After inválido ou superior a um segundo impede a retentativa. Os timeouts de conexão e leitura são de 5 e 10 segundos por tentativa. Erros de certificado e demais erros HTTP são propagados sem repetição. Após a última falha, a exceção é propagada. A validação do ZIP não provoca novo download. Não mantém cache entre chamadas.
+Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503 ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo. Retry-After inválido ou superior a um segundo impede a retentativa. O timeout de conexão é de 5 segundos; o de leitura é de 5 segundos na primeira tentativa e 10 na retentativa. Erros de certificado e demais erros HTTP são propagados sem repetição. Após a última falha, a exceção é propagada. A validação do ZIP não provoca novo download. Não mantém cache entre chamadas.
 
 ## `buscar(data, prefixo_ticker=None, comprimento_ticker=None, boletim_completo=False)`
 
@@ -1272,61 +1273,76 @@ Esse comando publica o conteúdo de `site/` na branch `gh-pages` do remoto `orig
 
 Registre as mudanças de cada versão em `docs/release-X.Y.Z.md`, incluindo o comportamento resultante, o racional das decisões e os exemplos de migração quando houver incompatibilidades. Atualize o índice `docs/releases.md` e a navegação em `mkdocs.yml`. O README mantém apenas o link permanente para as notas, sem acumular resumos de versões.
 
-Ao criar uma Release no GitHub, copie o conteúdo dessa página para as notas. A página da documentação é a fonte canônica. Use URLs absolutas para links nas notas, pois o mesmo texto será exibido no GitHub. Notas de correções pequenas podem ter apenas um parágrafo; mudanças incompatíveis devem explicar o impacto e mostrar a migração.
+A Release do GitHub é criada a partir dessa página, que é a fonte canônica. Links relativos para outras páginas da documentação são convertidos em URLs absolutas do site na publicação. Notas de correções pequenas podem ter apenas um parágrafo; mudanças incompatíveis devem explicar o impacto e mostrar a migração.
 
-## Atualizar a versão
+## Publicar uma versão
 
-Confira a versão atual sem alterar arquivos:
+A publicação é feita pelo workflow `.github/workflows/release.yml`, disparado pelo push de uma tag `vX.Y.Z`. Localmente, basta preparar a versão:
+
+1. Atualize a versão seguindo o incremento semântico (`patch`, `minor` ou `major`) e confira o resultado:
+
+   ```sh
+   uv version --bump patch
+   uv version
+   ```
+2. Escreva as notas em `docs/release-X.Y.Z.md` e atualize `docs/releases.md` e `mkdocs.yml`, conforme a seção anterior.
+3. Faça o commit, crie a tag e envie os dois:
+
+   ```sh
+   git commit -am "release: X.Y.Z"
+   git tag vX.Y.Z
+   git push --follow-tags
+   ```
+
+O workflow executa, em ordem:
+
+1. **verificar**: confere se a tag corresponde à versão do `pyproject.toml` e se as notas existem; executa formatação, lint, tipos, testes locais (`tests -m "not rede"`, sem doctests) e o build estrito da documentação;
+2. **pypi**: gera os artefatos com `uv build --no-sources --clear` e publica no PyPI por Trusted Publishing, sem token;
+3. **release-github**: cria a Release `PYield X.Y.Z` com o conteúdo de `docs/release-X.Y.Z.md`, convertendo links relativos em URLs absolutas do site;
+4. **docs**: gera a documentação e publica no GitHub Pages.
+
+Se uma etapa falhar, as seguintes não rodam. Corrija a causa e use **Re-run failed jobs** na execução do workflow. Não recrie a tag depois que a versão chegou ao PyPI: o PyPI não aceita reenviar a mesma versão. Nesse caso, publique uma nova versão de correção.
+
+Acompanhe a execução na aba **Actions** do repositório ou com:
 
 ```sh
-uv version
+gh run watch
 ```
 
-Para atualizar a versão seguindo o próximo incremento semântico, use, por exemplo:
+### Configuração única
 
-```sh
-uv version --bump patch
-```
+O Trusted Publishing exige cadastrar o workflow no PyPI. Em [pypi.org/manage/project/pyield/settings/publishing](<https://pypi.org/manage/project/pyield/settings/publishing/>), adicione um publisher do GitHub com:
 
-Também estão disponíveis `major`, `minor`, `alpha`, `beta`, `rc`, `post` e `dev`. Revise o diff e os arquivos gerados pelo lockfile antes de continuar.
+- Owner: `crdcj`;
+- Repository name: `PYield`;
+- Workflow name: `release.yml`;
+- Environment name: `pypi`.
 
-## Gerar os artefatos
+O ambiente `pypi` é criado pelo GitHub na primeira execução. Em **Settings → Environments → pypi**, é possível exigir aprovação manual antes do envio ao PyPI.
 
-O projeto usa `uv_build` como backend PEP 517. Gere a distribuição a partir da raiz:
+### Publicação manual
+
+Use apenas se o workflow estiver indisponível. Gere os artefatos e confira a versão:
 
 ```sh
 uv build --no-sources --clear
-```
-
-O comando cria a distribuição fonte e a wheel no diretório `dist/`. `--no-sources` ignora fontes alternativas de dependências configuradas em `tool.uv.sources`, validando o build com os metadados usados na publicação. `--clear` limpa o diretório de saída antes do build para evitar a publicação de artefatos de versões anteriores. Antes de publicar, confirme o conteúdo dos artefatos e a versão:
-
-```sh
 ls dist
 ```
 
-## Publicar no PyPI
-
-Depois de atualizar a versão, executar as verificações e gerar os artefatos, publique o conteúdo de `dist/`. Para publicação local, mantenha o token no arquivo `.env` (esse arquivo já é ignorado pelo Git):
+Publique com o token mantido no arquivo `.env`, que já é ignorado pelo Git:
 
 ```text
 UV_PUBLISH_TOKEN=pypi-...
 ```
 
-Carregue o arquivo explicitamente ao publicar:
-
 ```sh
+uv run --env-file .env uv publish --dry-run
 uv run --env-file .env uv publish
 ```
 
-Para validar o fluxo sem enviar os arquivos, use:
+Não inclua tokens no repositório nem em comandos registrados no histórico do shell. Depois, crie a Release no GitHub com as notas da versão e publique a documentação, como descrito em [Documentação](<#documentacao>).
 
-```sh
-uv run --env-file .env uv publish --dry-run
-```
-
-Não inclua tokens no repositório nem em comandos registrados no histórico do shell.
-
-O nome e a versão do pacote publicados precisam ser novos no índice. Depois do upload, confira a página do [PYield no PyPI](<https://pypi.org/project/pyield/>).
+Confira o resultado na página do [PYield no PyPI](<https://pypi.org/project/pyield/>).
 
 # DI Over
 
@@ -1346,7 +1362,7 @@ ultimas_taxas = yd.di_over_serie(ultimos=5)
 
 As séries retornam um DataFrame Polars com colunas `data` (`Date`) e `taxa` (`Decimal(18, 4)` na anual ou `Decimal(18, 8)` na diária). O intervalo inclui as datas inicial e final; se `fim` for omitido, considera a data atual no Brasil. `ultimos` tem prioridade sobre o intervalo. Datas sem observações são omitidas; sem dados, o DataFrame é vazio e preserva o esquema. Intervalos longos são divididos automaticamente em blocos seguros para o SGS, dispensando consultas individuais por data.
 
-As escalas foram ajustadas e `di_over_serie` foi adicionada na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>). Na consulta escalar, datas sem dados retornam `Decimal("NaN")`. O histórico começa em 06/03/1986, ampliando a cobertura anterior do FTP, limitada a 20/08/2012. A docstring abaixo identifica as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+As escalas foram ajustadas e `di_over_serie` foi adicionada na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>). Na consulta escalar, datas sem dados retornam `Decimal("NaN")`. O histórico começa em 06/03/1986, ampliando a cobertura anterior do FTP, limitada a 20/08/2012. A docstring abaixo identifica as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
 
@@ -1555,7 +1571,7 @@ Parameters:
 
 Returns:
 
-<table>       <thead>         <tr>           <th>Type</th>           <th>Description</th>         </tr>       </thead>       <tbody>           <tr class="doc-section-item">             <td>                   <code><autoref backlink-anchor="pyield.futuro.di1.interpolar_taxa" backlink-type="returned-by" identifier="float" optional="">float</autoref></code>             </td>             <td>               <div class="doc-md-description">                 <p>Taxa de liquidação DI exata ou interpolada para a data e vencimento</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><autoref backlink-anchor="pyield.futuro.di1.interpolar_taxa" backlink-type="returned-by" identifier="float" optional="">float</autoref></code>             </td>             <td>               <div class="doc-md-description">                 <p>especificados. Retorna <code>float(&quot;nan&quot;)</code> se:</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><autoref backlink-anchor="pyield.futuro.di1.interpolar_taxa" backlink-type="returned-by" identifier="float" optional="">float</autoref></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li><code>data_referencia</code> ou <code>data_vencimento</code> for nulo.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><autoref backlink-anchor="pyield.futuro.di1.interpolar_taxa" backlink-type="returned-by" identifier="float" optional="">float</autoref></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>Não há dados DI para a <code>data_referencia</code>.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><autoref backlink-anchor="pyield.futuro.di1.interpolar_taxa" backlink-type="returned-by" identifier="float" optional="">float</autoref></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O <code>data_vencimento</code> está fora do intervalo e <code>extrapolar</code> é False.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><autoref backlink-anchor="pyield.futuro.di1.interpolar_taxa" backlink-type="returned-by" identifier="float" optional="">float</autoref></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O cálculo de interpolação falhou.</li> </ul>               </div>             </td>           </tr>       </tbody>     </table>
+<table>       <thead>         <tr>           <th>Type</th>           <th>Description</th>         </tr>       </thead>       <tbody>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <p>Taxa de liquidação DI exata ou interpolada para a data e vencimento</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <p>especificados. Retorna <code>float(&quot;nan&quot;)</code> se:</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li><code>data_referencia</code> ou <code>data_vencimento</code> for nulo.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>Não há dados DI para a <code>data_referencia</code>.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O <code>data_vencimento</code> está fora do intervalo e <code>extrapolar</code> é False.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O cálculo de interpolação falhou.</li> </ul>               </div>             </td>           </tr>       </tbody>     </table>
 
 Examples:
 
@@ -2816,19 +2832,27 @@ shape: (1, 1)
 
 # IGP-M
 
-As escalas e a cobertura dos números-índice foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#cobertura-e-organizacao-do-igp-m>).
+As escalas e a cobertura dos números-índice foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md#cobertura-e-organizacao-do-igp-m>).
 
 As taxas mensais são retornadas como `Decimal` em `yd.igpm.taxa()` e como `Decimal(18, 4)` na coluna `taxa` de `yd.igpm.taxa_serie()`. A unidade é decimal: `Decimal("0.0027")` representa 0,27%. Os valores são convertidos diretamente do texto do SGS/BCB, sem passagem por `float`.
 
 Quando indisponível, a consulta escalar retorna `Decimal("NaN")`; use `.is_nan()` para verificar. A consulta de série retorna um DataFrame vazio com o mesmo esquema. A série de taxas representa a variação mensal.
 
-Os números-índice são obtidos com `yd.igpm.indice(data)` e `yd.igpm.indice_serie(inicio, fim)` ou `yd.igpm.indice_serie(ultimos=n)`. A fonte é a FGV/Conjuntura Econômica, disponibilizada pelo [Ipeadata](<https://www.ipeadata.gov.br/api/>) na série `IGP12_IGPM12`. O retorno escalar usa `Decimal` com três casas e a coluna `indice` usa `Decimal(18, 3)`. A cobertura começa em **agosto de 1994**, base 100 da série. A coluna `periodo` identifica a competência no formato `YYYYMM`. O índice indisponível retorna `Decimal("NaN")` na consulta escalar.
+Os números-índice são obtidos com `yd.igpm.indice(data)` e `yd.igpm.indice_serie(inicio, fim)` ou `yd.igpm.indice_serie(ultimos=n)`. A fonte é a FGV/Conjuntura Econômica, disponibilizada pelo [Ipeadata](<https://www.ipeadata.gov.br/api/>) na série `IGP12_IGPM12`. O retorno escalar usa `Decimal` com três casas e a coluna `indice` usa `Decimal(18, 3)`. A cobertura começa em **agosto de 1994**, base 100 da série. A coluna `competencia` (`Date`) identifica o mês pelo seu primeiro dia, como nas demais séries mensais da biblioteca. O índice indisponível retorna `Decimal("NaN")` na consulta escalar.
 
 O corte acompanha a base do índice: julho de 1994 ainda tem quatro casas decimais na fonte (`92.9684`); de agosto de 1994 em diante, três casas preservam os valores. A biblioteca cobre esse período para manter um esquema simples e coerente com seu uso em cálculos financeiros em reais. Competências anteriores ao corte são omitidas nas séries e retornam `Decimal("NaN")` na consulta escalar. Um intervalo que atravesse o corte retorna somente agosto de 1994 em diante; um intervalo inteiramente anterior retorna DataFrame vazio, com o mesmo esquema. A seleção por `ultimos` também respeita esse limite.
 
-Para consultar os valores anteriores com sua precisão original, acesse a [série completa na API do Ipeadata](<https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO=> "IGP12_IGPM12")). Essa consulta é feita diretamente na fonte, fora da API de índices do PYield. A biblioteca omite esses índices, em vez de retorná-los com precisão reduzida. A cobertura das taxas mensais segue a série SGS 189.
+Para consultar os valores anteriores com sua precisão original, acesse a [série completa na API do Ipeadata](<https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO=> "IGP12_IGPM12")). Essa consulta é feita diretamente na fonte, fora da API de índices do PYield. A biblioteca omite esses índices, em vez de retorná-los com precisão reduzida. A cobertura das taxas mensais segue a série SGS 189. A projeção da ANBIMA, em `yd.igpm.taxa_projetada().valor_projetado`, também retorna `Decimal` com quatro casas.
 
 Nas séries de índices, qualquer dia identifica o mês inteiro; os dois meses extremos são incluídos. `fim=None` usa a data atual no Brasil. Informe `inicio` ou `ultimos`; quando informado, `ultimos` tem prioridade sobre as datas.
+
+## Projeção vigente
+
+`yd.igpm.taxa_projetada()` retorna a projeção do IGP-M que vale hoje para a atualização do VNA, segundo o Grupo Consultivo Permanente Macroeconômico da ANBIMA. O objeto informa `competencia` (primeiro dia do mês de referência, como em `calendario`), `valor_projetado`, `data_coleta` e `data_validade`. A projeção divulgada no fim da tarde só é retornada a partir da sua data de validade. Entre a divulgação do índice fechado e a validade da primeira projeção do mês seguinte, nenhuma projeção está vigente e a função retorna `None`.
+
+```python
+projecao = yd.igpm.taxa_projetada()
+```
 
 ## Calendário de divulgação
 
@@ -2838,9 +2862,9 @@ Nas séries de índices, qualquer dia identifica o mês inteiro; os dois meses e
 calendario = yd.igpm.calendario(2026)
 ```
 
-Taxas, números-índice e calendário de divulgação do IGP-M.
+Taxas, números-índice, projeção e calendário de divulgação do IGP-M.
 
-Disponibiliza `taxa`, `taxa_serie`, `indice`, `indice_serie` e `calendario`. As taxas vêm do SGS/BCB; os índices e o calendário têm implementações próprias neste pacote.
+Disponibiliza `taxa`, `taxa_serie`, `indice`, `indice_serie`, `taxa_projetada` e `calendario`. As taxas vêm do SGS/BCB e a projeção, da ANBIMA; os índices e o calendário têm implementações próprias neste pacote.
 
 ## `calendario(ano)`
 
@@ -2940,7 +2964,7 @@ Returns:
 
 **Output Columns**
 
-- periodo (Int64): competência mensal no formato YYYYMM.
+- competencia (Date): primeiro dia do mês de referência.
 - indice (Decimal(18, 3)): número-índice do IGP-M.
 
 **Notes**
@@ -2958,14 +2982,14 @@ Examples:
 ```pycon
 >>> yd.igpm.indice_serie("01-06-2000", "31-07-2000")
 shape: (2, 2)
-┌─────────┬───────────────┐
-│ periodo ┆ indice        │
-│ ---     ┆ ---           │
-│ i64     ┆ decimal[18,3] │
-╞═════════╪═══════════════╡
-│ 200006  ┆ 183.745       │
-│ 200007  ┆ 186.634       │
-└─────────┴───────────────┘
+┌─────────────┬───────────────┐
+│ competencia ┆ indice        │
+│ ---         ┆ ---           │
+│ date        ┆ decimal[18,3] │
+╞═════════════╪═══════════════╡
+│ 2000-06-01  ┆ 183.745       │
+│ 2000-07-01  ┆ 186.634       │
+└─────────────┴───────────────┘
 ```
 
 ## `taxa(data)`
@@ -3000,6 +3024,45 @@ Qualquer dia seleciona a competência mensal. Uma taxa negativa representa defla
 Decimal('-0.0034')
 ```
 
+## `taxa_projetada()`
+
+Obtém a projeção do IGP-M vigente hoje, segundo a ANBIMA.
+
+A função consulta a página de projeções do Grupo Consultivo Permanente Macroeconômico da ANBIMA e seleciona, entre as projeções do mês corrente, a de maior data de validade que não seja posterior à data de hoje no Brasil.
+
+Returns:
+
+| Type | Description |
+| --- | --- |
+| `ProjecaoIndicador \| None` | ProjecaoIndicador \| None: Objeto contendo: - competencia (dt.date): Primeiro dia do mês de referência da projeção (ex.: `dt.date(2026, 11, 1)`). - valor\_projetado (Decimal): Valor projetado do IGP-M em unidade decimal, com quatro casas decimais (0.0078 representa 0,78%). - data\_coleta (dt.date): Dia em que a ANBIMA coletou as projeções. - data\_validade (dt.date): Data a partir da qual a projeção vale para a atualização do Valor Nominal dos títulos indexados ao IGP-M. |
+| `ProjecaoIndicador \| None` | Retorna `None` quando nenhuma projeção do mês corrente está |
+| `ProjecaoIndicador \| None` | vigente, o que ocorre entre a divulgação do IGP-M fechado e a data de |
+| `ProjecaoIndicador \| None` | validade da primeira projeção do mês seguinte. Nesse intervalo, a |
+| `ProjecaoIndicador \| None` | atualização do VNA usa o índice oficial. |
+
+Raises:
+
+| Type | Description |
+| --- | --- |
+| `ConnectionError` | Se houver erro de conexão com o site da ANBIMA. |
+| `ValueError` | Se a página não tiver a estrutura esperada. |
+
+**Notes**
+
+Fonte: ANBIMA, página "Projeções IPCA e IGP-M" (https://www.anbima.com.br/pt\_br/informar/estatisticas/precos-e-indices/projecao-de-inflacao-gp-m.htm), lida do conteúdo que o portal carrega dinamicamente.
+
+A coleta ocorre no dia da divulgação de cada prévia e do IGP-M fechado; o resultado é publicado por volta das 17h30 e passa a valer na data de validade informada pela ANBIMA. Uma projeção recém-divulgada só é retornada a partir da sua data de validade.
+
+O valor é convertido do texto da página para Decimal, dividido por 100 e arredondado em quatro casas decimais, com empate para o par.
+
+Examples:
+
+```pycon
+>>> projecao = yd.igpm.taxa_projetada()
+>>> projecao is None or projecao.data_validade <= yd.hoje()
+True
+```
+
 ## `taxa_serie(inicio=None, fim=None, *, ultimos=None)`
 
 Obtém as taxas mensais do IGP-M via SGS do Banco Central (série 189).
@@ -3022,7 +3085,7 @@ Returns:
 
 **Output Columns**
 
-- periodo (Int64): competência mensal no formato YYYYMM.
+- competencia (Date): primeiro dia do mês de referência.
 - taxa (Decimal(18, 4)): variação mensal em decimal (0.005 = 0,50%).
 
 **Notes**
@@ -3040,15 +3103,15 @@ Examples:
 ```pycon
 >>> yd.igpm.taxa_serie("01-01-2025", "31-03-2025")
 shape: (3, 2)
-┌─────────┬───────────────┐
-│ periodo ┆ taxa          │
-│ ---     ┆ ---           │
-│ i64     ┆ decimal[18,4] │
-╞═════════╪═══════════════╡
-│ 202501  ┆ 0.0027        │
-│ 202502  ┆ 0.0106        │
-│ 202503  ┆ -0.0034       │
-└─────────┴───────────────┘
+┌─────────────┬───────────────┐
+│ competencia ┆ taxa          │
+│ ---         ┆ ---           │
+│ date        ┆ decimal[18,4] │
+╞═════════════╪═══════════════╡
+│ 2025-01-01  ┆ 0.0027        │
+│ 2025-02-01  ┆ 0.0106        │
+│ 2025-03-01  ┆ -0.0034       │
+└─────────────┴───────────────┘
 ```
 
 A taxa é mensal e decimal: março registra deflação de 0,34%. Para acompanhar as últimas competências, sem fixar os valores:
@@ -3326,6 +3389,14 @@ O número-índice é retornado como `Decimal` em `yd.ipca.indice()` e como `Deci
 
 As taxas históricas são retornadas como `Decimal` em `yd.ipca.taxa()` e como `Decimal(18, 4)` na coluna `taxa` de `yd.ipca.taxa_serie()`. A projeção da ANBIMA, em `yd.ipca.taxa_projetada().valor_projetado`, também retorna `Decimal` com quatro casas. A unidade é decimal: `Decimal("0.0045")` representa 0,45%. A taxa histórica indisponível retorna `Decimal("NaN")` na consulta escalar.
 
+## Projeção vigente
+
+`yd.ipca.taxa_projetada()` retorna a projeção do IPCA que vale hoje para a atualização do VNA, segundo o Grupo Consultivo Permanente Macroeconômico da ANBIMA. O objeto informa `competencia` (primeiro dia do mês de referência, como em `calendario`), `valor_projetado`, `data_coleta` e `data_validade`. A projeção divulgada no fim da tarde só é retornada a partir da sua data de validade. Entre a divulgação do índice fechado e a validade da primeira projeção do mês seguinte, nenhuma projeção está vigente e a função retorna `None`.
+
+```python
+projecao = yd.ipca.taxa_projetada()
+```
+
 ## Calendário de divulgação
 
 `yd.ipca.calendario(ano)` consulta o calendário oficial do IBGE e retorna as colunas `competencia` e `data_divulgacao`, ambas `Date`. O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte. A data prevista não comprova publicação do índice e datas ausentes não são estimadas.
@@ -3422,11 +3493,11 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame com colunas 'periodo' e 'indice'. |
+| `DataFrame` | pl.DataFrame com colunas 'competencia' e 'indice'. |
 
 **Output Columns**
 
-- periodo (Int64): período no formato YYYYMM.
+- competencia (Date): primeiro dia do mês de referência.
 - indice (Decimal(18, 2)): número-índice do IPCA.
 
 **Notes**
@@ -3446,15 +3517,15 @@ Examples:
 >>> # Obter os números-índice do IPCA para o primeiro trimestre
 >>> ipca.indice_serie(inicio="01-01-2025", fim="01-03-2025")
 shape: (3, 2)
-┌─────────┬───────────────┐
-│ periodo ┆ indice        │
-│ ---     ┆ ---           │
-│ i64     ┆ decimal[18,2] │
-╞═════════╪═══════════════╡
-│ 202501  ┆ 7111.86       │
-│ 202502  ┆ 7205.03       │
-│ 202503  ┆ 7245.38       │
-└─────────┴───────────────┘
+┌─────────────┬───────────────┐
+│ competencia ┆ indice        │
+│ ---         ┆ ---           │
+│ date        ┆ decimal[18,2] │
+╞═════════════╪═══════════════╡
+│ 2025-01-01  ┆ 7111.86       │
+│ 2025-02-01  ┆ 7205.03       │
+│ 2025-03-01  ┆ 7245.38       │
+└─────────────┴───────────────┘
 >>> # Obter o número-índice do IPCA do último mês
 >>> df = ipca.indice_serie(ultimos=1)
 >>> # Obter os números-índice do IPCA dos últimos 3 meses
@@ -3491,34 +3562,43 @@ Decimal('0.0016')
 
 ## `taxa_projetada()`
 
-Obtém a projeção atual do IPCA no site da ANBIMA.
+Obtém a projeção do IPCA vigente hoje, segundo a ANBIMA.
 
-A função baixa a planilha XLS de indicadores da ANBIMA e extrai os dados da projeção do IPCA.
+A função consulta a página de projeções do Grupo Consultivo Permanente Macroeconômico da ANBIMA e seleciona, entre as projeções do mês corrente, a de maior data de validade que não seja posterior à data de hoje no Brasil.
 
 Returns:
 
-| Name | Type | Description |
-| --- | --- | --- |
-| `ProjecaoIndicador` | `ProjecaoIndicador` | Objeto contendo: - ultima\_atualizacao (dt.datetime): Data e hora da última atualização. - periodo\_referencia (str): Período de referência no formato "MMM/YY" (ex.: "mar/26"). - valor\_projetado (Decimal): Valor projetado do IPCA em unidade decimal, com quatro casas decimais (0.0045 representa 0,45%). |
+| Type | Description |
+| --- | --- |
+| `ProjecaoIndicador \| None` | ProjecaoIndicador \| None: Objeto contendo: - competencia (dt.date): Primeiro dia do mês de referência da projeção (ex.: `dt.date(2026, 10, 1)`). - valor\_projetado (Decimal): Valor projetado do IPCA em unidade decimal, com quatro casas decimais (0.0045 representa 0,45%). - data\_coleta (dt.date): Dia em que a ANBIMA coletou as projeções. - data\_validade (dt.date): Data a partir da qual a projeção vale para a atualização do Valor Nominal dos títulos indexados ao IPCA. |
+| `ProjecaoIndicador \| None` | Retorna `None` quando nenhuma projeção do mês corrente está |
+| `ProjecaoIndicador \| None` | vigente, o que ocorre entre a divulgação do IPCA fechado e a data de |
+| `ProjecaoIndicador \| None` | validade da primeira projeção do mês seguinte. Nesse intervalo, a |
+| `ProjecaoIndicador \| None` | atualização do VNA usa o índice oficial. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
 | `ConnectionError` | Se houver erro de conexão com o site da ANBIMA. |
-| `ValueError` | Se os dados esperados não forem encontrados na planilha. |
+| `ValueError` | Se a página não tiver a estrutura esperada. |
 
 **Notes**
 
-Requer conexão com a internet para acessar o site da ANBIMA. O valor é convertido da célula da planilha para Decimal, dividido por 100 e arredondado em quatro casas decimais, com empate para o par.
+Fonte: ANBIMA, página "Projeções IPCA e IGP-M" (https://www.anbima.com.br/pt\_br/informar/estatisticas/precos-e-indices/projecao-de-inflacao-gp-m.htm), lida do conteúdo que o portal carrega dinamicamente.
+
+A coleta ocorre no dia da divulgação do IPCA-15 e do IPCA fechado; o resultado é publicado por volta das 17h30 e passa a valer na data de validade informada pela ANBIMA. Uma projeção recém-divulgada só é retornada a partir da sua data de validade.
+
+O quadro de indicadores da ANBIMA (`indicadores.xls`) não é usado porque não informa a validade e pode permanecer com a projeção anterior depois que a nova já está vigente.
+
+O valor é convertido do texto da página para Decimal, dividido por 100 e arredondado em quatro casas decimais, com empate para o par.
 
 Examples:
 
 ```pycon
->>> from pyield import ipca
->>> # Obter a projeção atual do IPCA na ANBIMA
->>> ipca.taxa_projetada()
-ProjecaoIndicador(ultima_atualizacao=..., periodo_referencia=..., valor_projetado=...)
+>>> projecao = yd.ipca.taxa_projetada()
+>>> projecao is None or projecao.data_validade <= yd.hoje()
+True
 ```
 
 ## `taxa_serie(inicio=None, fim=None, *, ultimos=None)`
@@ -3539,11 +3619,11 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame com colunas 'periodo' e 'taxa' (decimal). |
+| `DataFrame` | pl.DataFrame com colunas 'competencia' e 'taxa' (decimal). |
 
 **Output Columns**
 
-- periodo (Int64): período no formato YYYYMM.
+- competencia (Date): primeiro dia do mês de referência.
 - taxa (Decimal(18, 4)): taxa mensal em decimal (ex: 0.0016 = 0,16%).
 
 **Notes**
@@ -3562,15 +3642,15 @@ Examples:
 >>> from pyield import ipca
 >>> ipca.taxa_serie("01-01-2025", "01-03-2025")  # decimal (0.0016 = 0,16%)
 shape: (3, 2)
-┌─────────┬───────────────┐
-│ periodo ┆ taxa          │
-│ ---     ┆ ---           │
-│ i64     ┆ decimal[18,4] │
-╞═════════╪═══════════════╡
-│ 202501  ┆ 0.0016        │
-│ 202502  ┆ 0.0131        │
-│ 202503  ┆ 0.0056        │
-└─────────┴───────────────┘
+┌─────────────┬───────────────┐
+│ competencia ┆ taxa          │
+│ ---         ┆ ---           │
+│ date        ┆ decimal[18,4] │
+╞═════════════╪═══════════════╡
+│ 2025-01-01  ┆ 0.0016        │
+│ 2025-02-01  ┆ 0.0131        │
+│ 2025-03-01  ┆ 0.0056        │
+└─────────────┴───────────────┘
 >>> # Obter a taxa do IPCA do último mês
 >>> df = ipca.taxa_serie(ultimos=1)
 >>> # Obter as taxas do IPCA dos últimos 3 meses
@@ -6794,7 +6874,7 @@ cotacao = yd.ptax("22-04-2025")
 historico = yd.ptax_serie("22-04-2025", "25-04-2025")
 ```
 
-Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 Cotação PTAX de venda para uma data específica.
 
@@ -6901,7 +6981,7 @@ import pyield as yd
 
 As consultas de mercado precisam de conexão com a internet e buscam novamente os dados nas fontes a cada chamada. A exceção são os históricos em Parquet de TPF e futuros, que mantêm cache em memória por processo, renovado diariamente.
 
-Falhas transitórias de comunicação permitem uma única retentativa por download, com espera entre 0,5 e 1 segundo. Se a falha persistir, a exceção é propagada. As consultas HTTP usam 5 segundos para conexão e 10, 30 ou 60 segundos para leitura, conforme o endpoint. Esses limites valem por tentativa; não há garantia de um prazo total rígido. Consulte a [política de retentativas](<https://crdcj.github.io/PYield/release-0.62.0/#falhas-de-rede-e-retentativas>) para os erros elegíveis e o tratamento de `Retry-After`.
+Falhas transitórias de comunicação permitem uma única retentativa por download, com espera entre 0,5 e 1 segundo. Se a falha persistir, a exceção é propagada. As consultas HTTP usam 5 segundos para conexão. O timeout de leitura é de 5 segundos na primeira tentativa, ou 15 nos endpoints mais lentos, e dobra na retentativa. Esses limites valem por tentativa; não há garantia de um prazo total rígido. Consulte a [política de retentativas](<https://crdcj.github.io/PYield/release-0.62.0/index.md#falhas-de-rede-e-retentativas>) para os erros elegíveis e o tratamento de `Retry-After`.
 
 ## Dias úteis
 
@@ -7812,7 +7892,7 @@ Esta versão reúne as duas fontes de leilões de TPF em `yd.tpf.leiloes`, com a
 
 Chamadas sem `fonte` continuam consultando o Tesouro Nacional, com os mesmos parâmetros, colunas e valores da 0.63.0. Com `fonte="bc"`, o resultado é o mesmo que `yd.tpf.leiloes_bcb` retornava: colunas, tipos e metodologia não mudam.
 
-Não há troca automática de fonte. As duas fontes diferem em colunas e em metodologia, por exemplo nos financeiros calculados a partir do PU médio e na cotação publicada pelo BCB para LFT e NTN-B até 10/06/2024. Se a fonte mudasse conforme a disponibilidade do Tesouro, a mesma chamada poderia retornar esquemas e valores diferentes. As diferenças estão documentadas nas notas de [`yd.tpf.leiloes`](<https://crdcj.github.io/PYield/tpf/#leiloes>).
+Não há troca automática de fonte. As duas fontes diferem em colunas e em metodologia, por exemplo nos financeiros calculados a partir do PU médio e na cotação publicada pelo BCB para LFT e NTN-B até 10/06/2024. Se a fonte mudasse conforme a disponibilidade do Tesouro, a mesma chamada poderia retornar esquemas e valores diferentes. As diferenças estão documentadas nas notas de [`yd.tpf.leiloes`](<https://crdcj.github.io/PYield/tpf/index.md#leiloes>).
 
 ### Migração
 
@@ -7936,12 +8016,104 @@ As correções abaixo alteram apenas resultados que antes estavam errados ou ter
 - Datas informadas como string em branco deixam de gerar `AttributeError` ou `TypeError` em `yd.vna.vigencia` (`ValueError`), `yd.vna.historico`, `yd.ipca.taxa_serie`, `yd.ipca.indice_serie`, `yd.futuro.historico` e nas funções `datas_pagamento` dos títulos (resultado vazio).
 - Consultas externas que recebem HTTP 304 (Not Modified) sem terem feito requisição condicional geram `requests.HTTPError` com a URL consultada. O SGS do Banco Central passou a responder assim, com corpo vazio, para algumas séries e quantidades de `ultimos`. Antes, a resposta terminava em `JSONDecodeError`, que não indicava a falha da fonte.
 
+# Novidades na versão 0.64.1
+
+Versão de correção. Reduz a espera quando uma fonte externa aceita a conexão mas não responde e corrige uma falha de leitura em `yd.cpm.contratos`. A API pública, as colunas e os valores retornados não mudam.
+
+## Timeouts de leitura com retentativa mais longa
+
+O timeout de leitura das consultas externas passa a ser menor na primeira tentativa e dobra na retentativa. O padrão é de 5 segundos na primeira e 10 na segunda. O timeout de conexão continua em 5 segundos, e as regras de retentativa não mudam: no máximo duas tentativas, apenas para falhas transitórias de comunicação ou HTTP 502, 503 e 504.
+
+A mudança reduz a espera quando a fonte aceita a conexão mas não envia a resposta. Esse foi o caso das planilhas de VNA do Tesouro Nacional, usadas por `yd.vna` e pelas funções de NTN-B e NTN-C que dependem do VNA: a falha levava cerca de 2 minutos para aparecer e passa a levar cerca de 16 segundos.
+
+Os limites foram revistos com medições do tempo de resposta de cada fonte:
+
+- VNA, RMD e secundário mensal de TPF usavam 60 segundos e respondem em menos de 1 segundo. Passam a 5 e 10.
+- Calendários do Copom, do IPCA e do IGP-M usavam 30 segundos e respondem em menos de 2. Passam a 5 e 10.
+- SGS, CPM, secundário intradia de TPF e índices do IGP-M mantêm o limite máximo de 30 segundos, agora com 15 na primeira tentativa. Essas fontes levam de 4 a 9 segundos em consultas comuns.
+- As demais fontes usavam 10 segundos e passam a 5 e 10, mantendo o mesmo limite máximo.
+
+## Correções
+
+- `yd.cpm.contratos` deixa de gerar `ComputeError` em datas como 30/10/2026. O CSV de derivativos consolidados da B3 era lido por inteiro, e o tipo de colunas não usadas, como `Preço de abertura`, era inferido pelas primeiras linhas. Quando essas linhas tinham apenas inteiros e uma linha seguinte trazia decimais, a leitura falhava. Agora só as colunas de código e de preço de referência são lidas.
+
+# Novidades na versão 0.65.0
+
+Esta versão corrige a projeção de inflação retornada pela biblioteca, estende a mesma consulta ao IGP-M e padroniza a representação do mês de referência em todas as séries mensais.
+
+## Projeção vigente de IPCA e IGP-M
+
+`yd.ipca.taxa_projetada()` passa a retornar a projeção que vale hoje para a atualização do VNA, e `yd.igpm.taxa_projetada()` é nova, com o mesmo comportamento. As duas consultam a página [Projeções IPCA e IGP-M](<https://www.anbima.com.br/pt_br/informar/estatisticas/precos-e-indices/projecao-de-inflacao-gp-m.htm>) do Grupo Consultivo Permanente Macroeconômico da ANBIMA.
+
+Até a 0.64.1, a projeção do IPCA vinha do quadro de indicadores da ANBIMA (`indicadores.xls`). Essa planilha não informa a data de validade e pode continuar com a projeção anterior depois que a nova já está vigente. Na manhã de 12/11/2026, por exemplo, a planilha ainda mostrava 0,87% para o IGP-M de novembro, enquanto a projeção vigente desde aquele dia era 0,78%, coletada em 11/11.
+
+A função seleciona, entre as projeções do mês corrente, a de maior data de validade que não seja posterior à data de hoje no Brasil. Uma projeção divulgada no fim da tarde só é retornada a partir da sua validade. Entre a divulgação do índice fechado e a validade da primeira projeção do mês seguinte, nenhuma projeção está vigente: nesse intervalo, a atualização do VNA usa o índice oficial, e a função retorna `None`.
+
+O objeto retornado, `ProjecaoIndicador`, passa a ter:
+
+| Campo | Tipo | Conteúdo |
+| --- | --- | --- |
+| `competencia` | `dt.date` | Primeiro dia do mês de referência da projeção |
+| `valor_projetado` | `Decimal` | Projeção em decimal, com quatro casas (`0.0078` = 0,78%) |
+| `data_coleta` | `dt.date` | Dia em que a ANBIMA coletou as projeções |
+| `data_validade` | `dt.date` | Início da vigência para atualização do VNA |
+
+### Migração
+
+`ultima_atualizacao` deixa de existir, pois a nova fonte não publica esse dado; use `data_coleta` e `data_validade`. `periodo_referencia` (`"out/26"`) passa a ser `competencia` (`dt.date(2026, 10, 1)`). Trate o retorno `None`:
+
+```python
+# 0.64.1
+projecao = yd.ipca.taxa_projetada()
+projecao.periodo_referencia  # "out/26"
+
+# 0.65.0
+projecao = yd.ipca.taxa_projetada()
+if projecao is not None:
+    projecao.competencia  # dt.date(2026, 10, 1)
+    projecao.data_validade  # dt.date(2026, 10, 26)
+```
+
+## Competência como `Date` nas séries mensais
+
+O mês de referência dos dados mensais passa a ser a coluna `competencia`, do tipo `Date`, no primeiro dia do mês, como já era em `yd.ipca.calendario`, `yd.igpm.calendario` e `yd.vna.contexto`.
+
+| Função | 0.64.1 | 0.65.0 |
+| --- | --- | --- |
+| `yd.ipca.taxa_serie`, `yd.ipca.indice_serie` | `periodo` (`Int64`, `202501`) | `competencia` (`Date`, `2025-01-01`) |
+| `yd.igpm.taxa_serie`, `yd.igpm.indice_serie` | `periodo` (`Int64`, `202501`) | `competencia` (`Date`, `2025-01-01`) |
+| `yd.rmd` (abas `"1.3"` e `"2.1"`) | `periodo` (`Date`) | `competencia` (`Date`) |
+
+Os valores das taxas e dos índices não mudam. Python e Polars não têm um tipo para mês: a data no primeiro dia do mês permite comparar, ordenar, cruzar com outras datas e avançar meses (`dt.offset_by("1mo")`) sem conversão. O inteiro `YYYYMM` induzia aritmética errada (`202612 + 1 = 202613`) e exigia conversão para cruzar as séries com os calendários e com `yd.vna.contexto`. As fontes BCB/SGS e Ipeadata já publicam o mês dessa forma.
+
+### Migração
+
+Renomeie a coluna e compare com datas:
+
+```python
+# 0.64.1
+df = yd.ipca.taxa_serie(ultimos=12)
+df.filter(pl.col("periodo") == 202501)
+
+# 0.65.0
+df = yd.ipca.taxa_serie(ultimos=12)
+df.filter(pl.col("competencia") == dt.date(2025, 1, 1))
+```
+
+Para manter o inteiro `YYYYMM` em código existente:
+
+```python
+df.with_columns(periodo=pl.col("competencia").dt.strftime("%Y%m").cast(pl.Int64))
+```
+
 # Notas de versão
 
 Cada versão tem uma página com as mudanças, o racional das decisões e as orientações de migração. Consulte também as [releases do GitHub](<https://github.com/crdcj/PYield/releases>) para as publicações.
 
 | Versão | Principais mudanças |
 | --- | --- |
+| [0.65.0](<https://crdcj.github.io/PYield/release-0.65.0/index.md>) | Projeção vigente de IPCA e IGP-M pela página de projeções da ANBIMA, com data de coleta e de validade, em `yd.ipca.taxa_projetada` e no novo `yd.igpm.taxa_projetada`; mês de referência das séries mensais como `competencia` (`Date`). |
+| [0.64.1](<https://crdcj.github.io/PYield/release-0.64.1/index.md>) | Timeout de leitura menor na primeira tentativa e dobrado na retentativa, com limites revistos por fonte; correção de `ComputeError` em `yd.cpm.contratos`. |
 | [0.64.0](<https://crdcj.github.io/PYield/release-0.64.0/index.md>) | Fonte explícita em `yd.tpf.leiloes` (`fonte="tn"` ou `fonte="bc"`) e remoção de `yd.tpf.leiloes_bcb`; taxas de `yd.tpf.secundario.mensal` em decimal; `nome_comercial` obrigatório em `yd.ntnb1.dv01`; erro para prazos conflitantes na curva zero e no interpolador; duration sem truncamento; ofertas de compra e venda de `yd.futuro.historico` na convenção da B3; correções em prêmio limpo, curvas zero e leilões. |
 | [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>) | Escalas decimais por modalidade, série histórica de DI Over, números-índice no contexto de VNA e índices do IGP-M desde agosto de 1994. |
 | [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>) | Consultas externas sem cache, remoção de `atualizar`, retry leve, indicadores SGS com `Decimal`, taxas Over diárias e Polars 2.0 como mínimo. |
@@ -7976,7 +8148,7 @@ serie_diaria = yd.selic.over_serie(ultimos=5, anualizada=False)
 meta = yd.selic.meta("28-02-2025")
 ```
 
-As escalas foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#escalas-decimais-dos-indicadores>). As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+As escalas foram ajustadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md#escalas-decimais-dos-indicadores>). As docstrings abaixo identificam as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 Indicadores da taxa Selic: `over`, `over_serie`, `meta` e `meta_serie`.
 
@@ -8220,7 +8392,7 @@ Na tabela, **T** significa truncado, **A**, arredondado, e **I**, informado. Na 
 
 Os cupons, os fluxos e as cotações de NTN-B e NTN-C são calculados em base 100, com as casas decimais da tabela da STN. LFT, NTN-B Principal e NTN-B1 também retornam cotação em base 100. A NTN-F mantém os fluxos em base 1000.
 
-Taxas de precificação e consultas de inflação usam unidade decimal: T6 na taxa percentual equivale a T8 na taxa decimal, e A2 na projeção percentual equivale a A4 na projeção decimal. Em `yd.vna.projetado`, o parâmetro `inflacao` de NTN-B e NTN-C aceita taxa decimal (`0.0045`) ou percentual explícito (`"0.45%"` ou `"0,45%"`), assim como `inflacao_projetada` de `yd.vna.contexto`. O retorno `Decimal("0.0045")` de `yd.ipca.taxa_projetada().valor_projetado` pode ser usado diretamente em `vna.projetado`. A normalização da taxa de precificação dos títulos de leilão trunca a taxa decimal em oito casas antes do desconto.
+Taxas de precificação e consultas de inflação usam unidade decimal: T6 na taxa percentual equivale a T8 na taxa decimal, e A2 na projeção percentual equivale a A4 na projeção decimal. Em `yd.vna.projetado`, o parâmetro `inflacao` de NTN-B e NTN-C aceita taxa decimal (`0.0045`) ou percentual explícito (`"0.45%"` ou `"0,45%"`), assim como `inflacao_projetada` de `yd.vna.contexto`. O retorno `Decimal("0.0045")` de `yd.ipca.taxa_projetada().valor_projetado` pode ser usado diretamente em `vna.projetado`, assim como `yd.igpm.taxa_projetada().valor_projetado` para a NTN-C. A normalização da taxa de precificação dos títulos de leilão trunca a taxa decimal em oito casas antes do desconto.
 
 Por exemplo, a cotação `99,3651` da STN é retornada como `Decimal("99.3651")`. A relação entre cotação e preço é:
 
@@ -9057,7 +9229,7 @@ Returns:
 
 **Output Columns**
 
-Aba `"1.3"`: \* periodo (Date): primeiro dia do mês de referência. \* grupo (String): seção principal — `"Emissões"` ou `"Resgates"`. \* subgrupo (String): categoria dentro do grupo. \* titulo (String): tipo de título ou `null` para subgrupos sem detalhamento por título. \* valor (Float64): valor em R$. Aba `"2.1"`: \* periodo (Date): primeiro dia do mês de referência. \* detentor (String): quem detém o estoque — `"Público"` ou `"Banco Central"`. \* tipo (String): classificação da dívida — `"DPMFi"` (interna) ou `"DPFe"` (externa). \* categoria (String): subdivisão dentro do tipo, quando houver — `"Tesouro Nacional"`, `"Banco Central"` (emitente dentro da DPMFi pública), `"Mobiliária"`, `"Contratual"`; `null` quando não há subdivisão (ex.: DPMFi em poder do Banco Central). \* titulo (String): título ou instrumento de dívida. \* valor (Float64): valor em R$. Somente registros folha; subtotais devem ser calculados pelo usuário via agregação.
+Aba `"1.3"`: \* competencia (Date): primeiro dia do mês de referência. \* grupo (String): seção principal — `"Emissões"` ou `"Resgates"`. \* subgrupo (String): categoria dentro do grupo. \* titulo (String): tipo de título ou `null` para subgrupos sem detalhamento por título. \* valor (Float64): valor em R$. Aba `"2.1"`: \* competencia (Date): primeiro dia do mês de referência. \* detentor (String): quem detém o estoque — `"Público"` ou `"Banco Central"`. \* tipo (String): classificação da dívida — `"DPMFi"` (interna) ou `"DPFe"` (externa). \* categoria (String): subdivisão dentro do tipo, quando houver — `"Tesouro Nacional"`, `"Banco Central"` (emitente dentro da DPMFi pública), `"Mobiliária"`, `"Contratual"`; `null` quando não há subdivisão (ex.: DPMFi em poder do Banco Central). \* titulo (String): título ou instrumento de dívida. \* valor (Float64): valor em R$. Somente registros folha; subtotais devem ser calculados pelo usuário via agregação.
 
 Raises:
 
@@ -9167,7 +9339,7 @@ O arquivo APC238 gerado em 31/05/2024 informa o VNA válido para 03/06/2024, pr�
 
 Para NTN-B e NTN-C, a sequência é `T6(vna_base * T16(indice_atual / indice_base))`: trunca o fator acumulado em dezesseis casas e o VNA em seis, com precisão interna de 28 dígitos. Não arredonda o fator nem usa a taxa mensal percentual arredondada. O cálculo da base não tem pró-rata de dias nem arredondamento de projeção. Para LFT, a sequência é `T6(1000 * A16(fator_acumulado))`: arredonda o fator em dezesseis casas (meio para cima) e trunca o VNA em seis. A base original de R$ 1.000 também fica embutida na biblioteca.
 
-Usar o VNA do mês anterior já truncado pode perder uma unidade na sexta casa; encadear essas bases acumula a perda. Por isso, a referência de partida para reconstrução exata deve ser a original, selecionada pela biblioteca. Consulte o registro da fórmula, da validação histórica e da divergência identificada em fevereiro de 2014 na [metodologia da STN](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/#vna-base-mensal-da-ntn-b>). O valor calculado não substitui a consulta ao VNA publicado por `yd.vna.valor`. O registro da reconstrução e das datas da LFT está na [metodologia complementar](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-letras-notas-stn/#conferencia-da-reconstrucao-desde-a-origem>).
+Usar o VNA do mês anterior já truncado pode perder uma unidade na sexta casa; encadear essas bases acumula a perda. Por isso, a referência de partida para reconstrução exata deve ser a original, selecionada pela biblioteca. Consulte o registro da fórmula, da validação histórica e da divergência identificada em fevereiro de 2014 na [metodologia da STN](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/index.md#vna-base-mensal-da-ntn-b>). O valor calculado não substitui a consulta ao VNA publicado por `yd.vna.valor`. O registro da reconstrução e das datas da LFT está na [metodologia complementar](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-letras-notas-stn/index.md#conferencia-da-reconstrucao-desde-a-origem>).
 
 ## Interpolação e projeção
 
@@ -9202,7 +9374,7 @@ O parâmetro `inflacao` de NTN-B e NTN-C em `yd.vna.projetado` recebia números 
 
 ## Contexto da vigência
 
-As colunas de números-índice e as escalas decimais do contexto foram atualizadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#contexto-de-vna-com-numeros-indice>).
+As colunas de números-índice e as escalas decimais do contexto foram atualizadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md#contexto-de-vna-com-numeros-indice>).
 
 `yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B ou NTN-C em um DataFrame com uma linha. Inclui as datas da vigência, os VNAs publicados no início e no fim, os números-índice anterior e atual, a competência da inflação, sua origem e situação (`realizado`, `projetado` ou `indisponivel`) e uma lista de pendências. Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
 

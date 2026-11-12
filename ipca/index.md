@@ -4,6 +4,14 @@ O número-índice é retornado como `Decimal` em `yd.ipca.indice()` e como `Deci
 
 As taxas históricas são retornadas como `Decimal` em `yd.ipca.taxa()` e como `Decimal(18, 4)` na coluna `taxa` de `yd.ipca.taxa_serie()`. A projeção da ANBIMA, em `yd.ipca.taxa_projetada().valor_projetado`, também retorna `Decimal` com quatro casas. A unidade é decimal: `Decimal("0.0045")` representa 0,45%. A taxa histórica indisponível retorna `Decimal("NaN")` na consulta escalar.
 
+## Projeção vigente
+
+`yd.ipca.taxa_projetada()` retorna a projeção do IPCA que vale hoje para a atualização do VNA, segundo o Grupo Consultivo Permanente Macroeconômico da ANBIMA. O objeto informa `competencia` (primeiro dia do mês de referência, como em `calendario`), `valor_projetado`, `data_coleta` e `data_validade`. A projeção divulgada no fim da tarde só é retornada a partir da sua data de validade. Entre a divulgação do índice fechado e a validade da primeira projeção do mês seguinte, nenhuma projeção está vigente e a função retorna `None`.
+
+```python
+projecao = yd.ipca.taxa_projetada()
+```
+
 ## Calendário de divulgação
 
 `yd.ipca.calendario(ano)` consulta o calendário oficial do IBGE e retorna as colunas `competencia` e `data_divulgacao`, ambas `Date`. O ano seleciona a competência: dezembro pode ter divulgação no ano seguinte. A data prevista não comprova publicação do índice e datas ausentes não são estimadas.
@@ -100,11 +108,11 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame com colunas 'periodo' e 'indice'. |
+| `DataFrame` | pl.DataFrame com colunas 'competencia' e 'indice'. |
 
 **Output Columns**
 
-- periodo (Int64): período no formato YYYYMM.
+- competencia (Date): primeiro dia do mês de referência.
 - indice (Decimal(18, 2)): número-índice do IPCA.
 
 **Notes**
@@ -124,15 +132,15 @@ Examples:
 >>> # Obter os números-índice do IPCA para o primeiro trimestre
 >>> ipca.indice_serie(inicio="01-01-2025", fim="01-03-2025")
 shape: (3, 2)
-┌─────────┬───────────────┐
-│ periodo ┆ indice        │
-│ ---     ┆ ---           │
-│ i64     ┆ decimal[18,2] │
-╞═════════╪═══════════════╡
-│ 202501  ┆ 7111.86       │
-│ 202502  ┆ 7205.03       │
-│ 202503  ┆ 7245.38       │
-└─────────┴───────────────┘
+┌─────────────┬───────────────┐
+│ competencia ┆ indice        │
+│ ---         ┆ ---           │
+│ date        ┆ decimal[18,2] │
+╞═════════════╪═══════════════╡
+│ 2025-01-01  ┆ 7111.86       │
+│ 2025-02-01  ┆ 7205.03       │
+│ 2025-03-01  ┆ 7245.38       │
+└─────────────┴───────────────┘
 >>> # Obter o número-índice do IPCA do último mês
 >>> df = ipca.indice_serie(ultimos=1)
 >>> # Obter os números-índice do IPCA dos últimos 3 meses
@@ -169,34 +177,43 @@ Decimal('0.0016')
 
 ## `taxa_projetada()`
 
-Obtém a projeção atual do IPCA no site da ANBIMA.
+Obtém a projeção do IPCA vigente hoje, segundo a ANBIMA.
 
-A função baixa a planilha XLS de indicadores da ANBIMA e extrai os dados da projeção do IPCA.
+A função consulta a página de projeções do Grupo Consultivo Permanente Macroeconômico da ANBIMA e seleciona, entre as projeções do mês corrente, a de maior data de validade que não seja posterior à data de hoje no Brasil.
 
 Returns:
 
-| Name | Type | Description |
-| --- | --- | --- |
-| `ProjecaoIndicador` | `ProjecaoIndicador` | Objeto contendo: - ultima\_atualizacao (dt.datetime): Data e hora da última atualização. - periodo\_referencia (str): Período de referência no formato "MMM/YY" (ex.: "mar/26"). - valor\_projetado (Decimal): Valor projetado do IPCA em unidade decimal, com quatro casas decimais (0.0045 representa 0,45%). |
+| Type | Description |
+| --- | --- |
+| `ProjecaoIndicador \| None` | ProjecaoIndicador \| None: Objeto contendo: - competencia (dt.date): Primeiro dia do mês de referência da projeção (ex.: `dt.date(2026, 10, 1)`). - valor\_projetado (Decimal): Valor projetado do IPCA em unidade decimal, com quatro casas decimais (0.0045 representa 0,45%). - data\_coleta (dt.date): Dia em que a ANBIMA coletou as projeções. - data\_validade (dt.date): Data a partir da qual a projeção vale para a atualização do Valor Nominal dos títulos indexados ao IPCA. |
+| `ProjecaoIndicador \| None` | Retorna `None` quando nenhuma projeção do mês corrente está |
+| `ProjecaoIndicador \| None` | vigente, o que ocorre entre a divulgação do IPCA fechado e a data de |
+| `ProjecaoIndicador \| None` | validade da primeira projeção do mês seguinte. Nesse intervalo, a |
+| `ProjecaoIndicador \| None` | atualização do VNA usa o índice oficial. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
 | `ConnectionError` | Se houver erro de conexão com o site da ANBIMA. |
-| `ValueError` | Se os dados esperados não forem encontrados na planilha. |
+| `ValueError` | Se a página não tiver a estrutura esperada. |
 
 **Notes**
 
-Requer conexão com a internet para acessar o site da ANBIMA. O valor é convertido da célula da planilha para Decimal, dividido por 100 e arredondado em quatro casas decimais, com empate para o par.
+Fonte: ANBIMA, página "Projeções IPCA e IGP-M" (https://www.anbima.com.br/pt\_br/informar/estatisticas/precos-e-indices/projecao-de-inflacao-gp-m.htm), lida do conteúdo que o portal carrega dinamicamente.
+
+A coleta ocorre no dia da divulgação do IPCA-15 e do IPCA fechado; o resultado é publicado por volta das 17h30 e passa a valer na data de validade informada pela ANBIMA. Uma projeção recém-divulgada só é retornada a partir da sua data de validade.
+
+O quadro de indicadores da ANBIMA (`indicadores.xls`) não é usado porque não informa a validade e pode permanecer com a projeção anterior depois que a nova já está vigente.
+
+O valor é convertido do texto da página para Decimal, dividido por 100 e arredondado em quatro casas decimais, com empate para o par.
 
 Examples:
 
 ```pycon
->>> from pyield import ipca
->>> # Obter a projeção atual do IPCA na ANBIMA
->>> ipca.taxa_projetada()
-ProjecaoIndicador(ultima_atualizacao=..., periodo_referencia=..., valor_projetado=...)
+>>> projecao = yd.ipca.taxa_projetada()
+>>> projecao is None or projecao.data_validade <= yd.hoje()
+True
 ```
 
 ## `taxa_serie(inicio=None, fim=None, *, ultimos=None)`
@@ -217,11 +234,11 @@ Returns:
 
 | Type | Description |
 | --- | --- |
-| `DataFrame` | pl.DataFrame com colunas 'periodo' e 'taxa' (decimal). |
+| `DataFrame` | pl.DataFrame com colunas 'competencia' e 'taxa' (decimal). |
 
 **Output Columns**
 
-- periodo (Int64): período no formato YYYYMM.
+- competencia (Date): primeiro dia do mês de referência.
 - taxa (Decimal(18, 4)): taxa mensal em decimal (ex: 0.0016 = 0,16%).
 
 **Notes**
@@ -240,15 +257,15 @@ Examples:
 >>> from pyield import ipca
 >>> ipca.taxa_serie("01-01-2025", "01-03-2025")  # decimal (0.0016 = 0,16%)
 shape: (3, 2)
-┌─────────┬───────────────┐
-│ periodo ┆ taxa          │
-│ ---     ┆ ---           │
-│ i64     ┆ decimal[18,4] │
-╞═════════╪═══════════════╡
-│ 202501  ┆ 0.0016        │
-│ 202502  ┆ 0.0131        │
-│ 202503  ┆ 0.0056        │
-└─────────┴───────────────┘
+┌─────────────┬───────────────┐
+│ competencia ┆ taxa          │
+│ ---         ┆ ---           │
+│ date        ┆ decimal[18,4] │
+╞═════════════╪═══════════════╡
+│ 2025-01-01  ┆ 0.0016        │
+│ 2025-02-01  ┆ 0.0131        │
+│ 2025-03-01  ┆ 0.0056        │
+└─────────────┴───────────────┘
 >>> # Obter a taxa do IPCA do último mês
 >>> df = ipca.taxa_serie(ultimos=1)
 >>> # Obter as taxas do IPCA dos últimos 3 meses

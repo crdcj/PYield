@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.1.0">
+      <meta name="generator" content="zensical-0.1.1">
     
     
       
@@ -42,7 +42,7 @@
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.ebb7f775.min.css">
       
       
 
@@ -463,6 +463,60 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.65.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.65.0
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.64.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.64.1
 
     
   </span>
@@ -2020,9 +2074,10 @@ os dados nas fontes a cada chamada. A exceção são os históricos em Parquet d
 TPF e futuros, que mantêm cache em memória por processo, renovado diariamente.</p>
 <p>Falhas transitórias de comunicação permitem uma única retentativa por download,
 com espera entre 0,5 e 1 segundo. Se a falha persistir, a exceção é propagada.
-As consultas HTTP usam 5 segundos para conexão e 10, 30 ou 60 segundos para
-leitura, conforme o endpoint. Esses limites valem por tentativa; não há garantia
-de um prazo total rígido. Consulte a <a href="../release-0.62.0/#falhas-de-rede-e-retentativas">política de retentativas</a>
+As consultas HTTP usam 5 segundos para conexão. O timeout de leitura é de 5
+segundos na primeira tentativa, ou 15 nos endpoints mais lentos, e dobra na
+retentativa. Esses limites valem por tentativa; não há garantia de um prazo total
+rígido. Consulte a <a href="../release-0.62.0/#falhas-de-rede-e-retentativas">política de retentativas</a>
 para os erros elegíveis e o tratamento de <code>Retry-After</code>.</p>
 <h2 id="dias-uteis">Dias úteis</h2>
 <p>O módulo <code>du</code> é a base dos cálculos de datas. Ele considera o calendário de
@@ -2245,7 +2300,7 @@ o contrato da função:</p>
       <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["navigation.instant","content.action.copy"],"redirect":null,"search":"../assets/javascripts/workers/search.719e0d91.min.js","tags":null,"translations":{"clipboard.copied":"Copiado para área de transferência","clipboard.copy":"Copiar para área de transferência","clipboard.error":"Could not copy to clipboard","search.result.more.one":"mais 1 nesta página","search.result.more.other":"# mais nesta página","search.result.none":"Nenhum documento encontrado","search.result.one":"1 documento encontrado","search.result.other":"# documentos encontrados","search.result.placeholder":"Digite para iniciar a busca","search.result.term.missing":"Ausente","select.version":"Selecione a versão"},"version":null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d31f0ffa.min.js"></script>
+      <script src="../assets/javascripts/bundle.3cb411a8.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

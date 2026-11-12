@@ -114,6 +114,7 @@ yd.igpm
 ├── indice_serie(inicio=None, fim=None, *, ultimos=None)
 ├── taxa(data)
 ├── taxa_serie(inicio=None, fim=None, *, ultimos=None)
+├── taxa_projetada()
 └── calendario(ano)
 ```
 

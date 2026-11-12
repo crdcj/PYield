@@ -16,7 +16,7 @@ ultimas_taxas = yd.di_over_serie(ultimos=5)
 
 As séries retornam um DataFrame Polars com colunas `data` (`Date`) e `taxa` (`Decimal(18, 4)` na anual ou `Decimal(18, 8)` na diária). O intervalo inclui as datas inicial e final; se `fim` for omitido, considera a data atual no Brasil. `ultimos` tem prioridade sobre o intervalo. Datas sem observações são omitidas; sem dados, o DataFrame é vazio e preserva o esquema. Intervalos longos são divididos automaticamente em blocos seguros para o SGS, dispensando consultas individuais por data.
 
-As escalas foram ajustadas e `di_over_serie` foi adicionada na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>). Na consulta escalar, datas sem dados retornam `Decimal("NaN")`. O histórico começa em 06/03/1986, ampliando a cobertura anterior do FTP, limitada a 20/08/2012. A docstring abaixo identifica as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+As escalas foram ajustadas e `di_over_serie` foi adicionada na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>). Na consulta escalar, datas sem dados retornam `Decimal("NaN")`. O histórico começa em 06/03/1986, ampliando a cobertura anterior do FTP, limitada a 20/08/2012. A docstring abaixo identifica as séries de origem. Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 Obtém a taxa DI over anualizada ou diária via SGS do Banco Central.
 

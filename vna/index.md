@@ -86,7 +86,7 @@ O arquivo APC238 gerado em 31/05/2024 informa o VNA válido para 03/06/2024, pr�
 
 Para NTN-B e NTN-C, a sequência é `T6(vna_base * T16(indice_atual / indice_base))`: trunca o fator acumulado em dezesseis casas e o VNA em seis, com precisão interna de 28 dígitos. Não arredonda o fator nem usa a taxa mensal percentual arredondada. O cálculo da base não tem pró-rata de dias nem arredondamento de projeção. Para LFT, a sequência é `T6(1000 * A16(fator_acumulado))`: arredonda o fator em dezesseis casas (meio para cima) e trunca o VNA em seis. A base original de R$ 1.000 também fica embutida na biblioteca.
 
-Usar o VNA do mês anterior já truncado pode perder uma unidade na sexta casa; encadear essas bases acumula a perda. Por isso, a referência de partida para reconstrução exata deve ser a original, selecionada pela biblioteca. Consulte o registro da fórmula, da validação histórica e da divergência identificada em fevereiro de 2014 na [metodologia da STN](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/#vna-base-mensal-da-ntn-b>). O valor calculado não substitui a consulta ao VNA publicado por `yd.vna.valor`. O registro da reconstrução e das datas da LFT está na [metodologia complementar](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-letras-notas-stn/#conferencia-da-reconstrucao-desde-a-origem>).
+Usar o VNA do mês anterior já truncado pode perder uma unidade na sexta casa; encadear essas bases acumula a perda. Por isso, a referência de partida para reconstrução exata deve ser a original, selecionada pela biblioteca. Consulte o registro da fórmula, da validação histórica e da divergência identificada em fevereiro de 2014 na [metodologia da STN](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-tpf-stn/index.md#vna-base-mensal-da-ntn-b>). O valor calculado não substitui a consulta ao VNA publicado por `yd.vna.valor`. O registro da reconstrução e das datas da LFT está na [metodologia complementar](<https://crdcj.github.io/PYield/referencias/metodologia-calculo-letras-notas-stn/index.md#conferencia-da-reconstrucao-desde-a-origem>).
 
 ## Interpolação e projeção
 
@@ -121,7 +121,7 @@ O parâmetro `inflacao` de NTN-B e NTN-C em `yd.vna.projetado` recebia números 
 
 ## Contexto da vigência
 
-As colunas de números-índice e as escalas decimais do contexto foram atualizadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/#contexto-de-vna-com-numeros-indice>).
+As colunas de números-índice e as escalas decimais do contexto foram atualizadas na [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md#contexto-de-vna-com-numeros-indice>).
 
 `yd.vna.contexto` reúne os parâmetros disponíveis para uma vigência de NTN-B ou NTN-C em um DataFrame com uma linha. Inclui as datas da vigência, os VNAs publicados no início e no fim, os números-índice anterior e atual, a competência da inflação, sua origem e situação (`realizado`, `projetado` ou `indisponivel`) e uma lista de pendências. Dados numéricos indisponíveis são nulos. Para NTN-C, informe `vencimento`.
 

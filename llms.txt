@@ -43,6 +43,8 @@
 - [0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md>)
 - [0.63.0](<https://crdcj.github.io/PYield/release-0.63.0/index.md>)
 - [0.64.0](<https://crdcj.github.io/PYield/release-0.64.0/index.md>)
+- [0.64.1](<https://crdcj.github.io/PYield/release-0.64.1/index.md>)
+- [0.65.0](<https://crdcj.github.io/PYield/release-0.65.0/index.md>)
 - [Visão geral](<https://crdcj.github.io/PYield/releases/index.md>)
 - [Selic](<https://crdcj.github.io/PYield/selic/index.md>)
 - [TPF](<https://crdcj.github.io/PYield/tpf/index.md>)

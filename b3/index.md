@@ -168,7 +168,7 @@ Returns:
 
 **Notes**
 
-Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503 ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo. Retry-After inválido ou superior a um segundo impede a retentativa. Os timeouts de conexão e leitura são de 5 e 10 segundos por tentativa. Erros de certificado e demais erros HTTP são propagados sem repetição. Após a última falha, a exceção é propagada. A validação do ZIP não provoca novo download. Não mantém cache entre chamadas.
+Falhas de conexão, timeout, transferência interrompida e HTTP 502, 503 ou 504 permitem uma retentativa, após espera de 0,5 a 1 segundo. Retry-After inválido ou superior a um segundo impede a retentativa. O timeout de conexão é de 5 segundos; o de leitura é de 5 segundos na primeira tentativa e 10 na retentativa. Erros de certificado e demais erros HTTP são propagados sem repetição. Após a última falha, a exceção é propagada. A validação do ZIP não provoca novo download. Não mantém cache entre chamadas.
 
 ## `buscar(data, prefixo_ticker=None, comprimento_ticker=None, boletim_completo=False)`
 

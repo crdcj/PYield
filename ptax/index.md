@@ -11,7 +11,7 @@ cotacao = yd.ptax("22-04-2025")
 historico = yd.ptax_serie("22-04-2025", "25-04-2025")
 ```
 
-Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
+Veja as [notas de migração da 0.62.0](<https://crdcj.github.io/PYield/release-0.62.0/index.md#indicadores-sgs-com-decimal>) para converter explicitamente os resultados para ponto flutuante.
 
 Cotação PTAX de venda para uma data específica.
 
