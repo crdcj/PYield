@@ -46,8 +46,8 @@ uv add pyield
 | Componente | Tipo | Finalidade | Funções públicas |
 |---|---|---|---|
 | `yd.du` | módulo | Dias úteis e calendário brasileiro | `contar`, `deslocar`, `eh_dia_util`, `gerar`, `ultimo_dia_util`, `contar_expr`, `deslocar_expr`, `eh_dia_util_expr` |
-| `yd.Interpolador` | classe | Interpolação escalar e em pipelines Polars, com métodos `linear` e `flat_forward` | `interpolar`, `interpolar_expr` |
-| `yd.interpolar(...)` | função | Interpolação vetorizada flat-forward, curva única ou multi-curva | |
+| `yd.Interpolador` | classe | Interpolação de uma curva pelos métodos `linear` e `flat_forward`: chamada direta para um prazo ou uma sequência e expressão para pipeline Polars | `interpolar`, `interpolar_expr` |
+| `yd.interpolar(...)` | função | Interpolação em lote, com uma curva por data de referência e métodos `linear` e `flat_forward` | |
 | `yd.forward(...)` | função | Taxa a termo entre dois vértices | |
 | `yd.forwards(...)` | função | Curva de taxas a termo | |
 | `yd.futuro` | módulo | Contratos futuros da B3 | `di1`, `historico`, `intradia`, `datas_disponiveis`, `vencimento`, `enriquecer`, `dv01_expr`, `vencimento_expr` |

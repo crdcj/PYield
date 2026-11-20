@@ -350,7 +350,7 @@ def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos(
     vencimentos, taxas, tolerancia
 ):
     curva = yd.ntnb.taxas_zero(DATA_LIQUIDACAO, vencimentos, taxas)
-    interpolar = yd.Interpolador(
+    flat_forward = yd.Interpolador(
         curva["dias_uteis"], curva["taxa_zero"], metodo="flat_forward"
     )
     for vencimento, tir in zip(vencimentos, taxas, strict=True):
@@ -361,7 +361,7 @@ def test_curva_zero_interpolada_reproduz_cotacoes_dos_titulos(
             for valor, prazo in zip(fluxos["valor_pagamento"], prazos, strict=True)
         )
         cotacao_curva = sum(
-            float(valor) / (1 + interpolar(prazo)) ** (prazo / 252)
+            float(valor) / (1 + flat_forward(prazo)) ** (prazo / 252)
             for valor, prazo in zip(fluxos["valor_pagamento"], prazos, strict=True)
         )
         assert cotacao_curva == pytest.approx(cotacao_tir, abs=tolerancia, rel=0)

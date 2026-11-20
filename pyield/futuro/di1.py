@@ -147,7 +147,7 @@ def interpolar_taxas(
     Returns:
         Series contendo as taxas DI interpoladas (como floats). Valores serão
         nulos onde interpolação não for possível (ex: sem dados DI para a data
-        de negociação). As taxas são retornadas em formato decimal; os exemplos
+        de negociação ou vencimento anterior a ela). As taxas são retornadas em formato decimal; os exemplos
         abaixo as multiplicam por 100 apenas para facilitar a leitura.
 
     Raises:
@@ -241,6 +241,7 @@ def interpolar_taxas(
         taxas_curva=df_ref[coluna_taxa],
         datas_alvo=df_entrada["data_referencia"],
         datas_curva=df_ref["data_referencia"],
+        metodo="flat_forward",
         extrapolar=extrapolar,
     )
 
@@ -274,6 +275,7 @@ def interpolar_taxa(
         especificados. Retorna ``float("nan")`` se:
         - ``data_referencia`` ou ``data_vencimento`` for nulo.
         - Não há dados DI para a ``data_referencia``.
+        - O ``data_vencimento`` é anterior à ``data_referencia``.
         - O ``data_vencimento`` está fora do intervalo e ``extrapolar`` é False.
         - O cálculo de interpolação falhou.
 

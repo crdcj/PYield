@@ -386,7 +386,7 @@ def pu(
     return truncar_decimal(vp.sum(), 6)
 
 
-def taxas_zero(  # noqa: PLR0913, PLR0914, PLR0917
+def taxas_zero(  # noqa: PLR0914, PLR0917
     data_liquidacao: DateLike,
     vencimentos_ltn: DatesLike,
     taxas_ltn: ArrayLike,
@@ -519,12 +519,12 @@ def taxas_zero(  # noqa: PLR0913, PLR0914, PLR0917
         return pl.DataFrame(schema=_SCHEMA_TAXAS_ZERO)
 
     # 2. Criar interpoladores (aceitam pl.Series diretamente)
-    interpolador_ltn = interpolador.Interpolador(
+    flat_forward_ltn = interpolador.Interpolador(
         dias_uteis=du.contar(liquidacao, vencimentos_ltn),
         taxas=taxas_ltn,
         metodo="flat_forward",
     )
-    interpolador_ntnf = interpolador.Interpolador(
+    flat_forward_ntnf = interpolador.Interpolador(
         dias_uteis=du.contar(liquidacao, vencimentos_ntnf),
         taxas=taxas_ntnf,
         metodo="flat_forward",
@@ -541,7 +541,7 @@ def taxas_zero(  # noqa: PLR0913, PLR0914, PLR0917
         .with_columns(dias_uteis=du.contar_expr(liquidacao, "data_vencimento"))
         .with_columns(
             anos_uteis=pl.col("dias_uteis") / 252,
-            taxa_tir=interpolador_ntnf.interpolar_expr("dias_uteis"),
+            taxa_tir=flat_forward_ntnf.interpolar_expr("dias_uteis"),
         )
     )
 
@@ -556,7 +556,7 @@ def taxas_zero(  # noqa: PLR0913, PLR0914, PLR0917
     for data_vertice, dias_uteis, anos_uteis, tir in df.iter_rows():
         # Até o último vencimento LTN (inclusive), a taxa zero vem das LTNs
         if data_vertice <= ultimo_vencimento_ltn:
-            taxas_zero_por_data[data_vertice] = interpolador_ltn(dias_uteis)
+            taxas_zero_por_data[data_vertice] = flat_forward_ltn(dias_uteis)
             continue
 
         # Cupons anteriores ao pagamento final, com taxas zero já resolvidas.
@@ -600,14 +600,14 @@ def _fluxos_com_taxa_di(
     if df.is_empty():
         return df
 
-    interpolador_di = interpolador.Interpolador(
+    flat_forward_di = interpolador.Interpolador(
         du.contar(data_liquidacao, vencimentos_di), taxas_di, "flat_forward"
     )
     return df.with_columns(
         dias_uteis=du.contar(data_liquidacao, df["data_pagamento"]),
     ).with_columns(
         anos_uteis=pl.col("dias_uteis") / 252,
-        taxa_di=interpolador_di.interpolar_expr("dias_uteis"),
+        taxa_di=flat_forward_di.interpolar_expr("dias_uteis"),
     )
 
 

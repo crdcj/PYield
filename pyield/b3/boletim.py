@@ -151,7 +151,7 @@ def baixar_zip(data: DateLike, boletim_completo: bool = False) -> bytes:
     return resposta.content
 
 
-def _zip_tem_xml_valido(conteudo_zip: bytes) -> bool:  # noqa: PLR0911
+def _zip_tem_xml_valido(conteudo_zip: bytes) -> bool:
     with zipfile.ZipFile(io.BytesIO(conteudo_zip), "r") as zip_externo:
         nomes = zip_externo.namelist()
         if not nomes:

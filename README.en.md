@@ -46,7 +46,7 @@ uv add pyield
 | Component | Type | Purpose |
 |---|---|---|
 | `yd.du` | module | Business days and Brazilian calendar |
-| `yd.Interpolador` | class | Scalar and Polars-pipeline rate interpolation |
+| `yd.Interpolador` | class | Single-curve rate interpolation for scalars, sequences and Polars pipelines |
 | `yd.interpolar`, `yd.forward`, `yd.forwards` | functions | Curve interpolation and forward rates |
 | `yd.futuro` | module | B3 futures contracts and historical/intraday data |
 | `yd.di1` | module | DI1 curve and interpolation |

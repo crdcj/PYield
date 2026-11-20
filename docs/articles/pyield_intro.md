@@ -178,18 +178,20 @@ import polars as pl
 df = yd.futuro.historico("31-05-2024", "DI1")
 
 # Criar interpolador flat forward (padrão de mercado)
-interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
+flat_forward = yd.Interpolador(
+    df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward"
+)
 
 # Interpolar para 45 dias úteis
-interp(45)  # -> Taxa interpolada (ex: 0.1037)
+flat_forward(45)  # -> Taxa interpolada (ex: 0.1037)
 
 # Em um pipeline Polars
 df_alvos = pl.DataFrame({"du": [30, 60, 90]})
-df_alvos.with_columns(taxa=interp.interpolar_expr("du"))
+df_alvos.with_columns(taxa=flat_forward.interpolar_expr("du"))
 
 # Interpolação linear (alternativa)
-linear_interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="linear")
-linear_interp(45)  # -> Taxa interpolada linearmente
+linear = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="linear")
+linear(45)  # -> Taxa interpolada linearmente
 ```
 
 ### 6. Indicadores do Banco Central

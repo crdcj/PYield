@@ -278,10 +278,10 @@ def _pagamentos_curva_zero(
     if fluxos.is_empty():
         return fluxos
     dias_uteis = du.contar(data_liquidacao, fluxos["data_pagamento"])
-    taxas = interpolador.interpolar(
-        dias_uteis, curva["dias_uteis"], curva["taxa_zero"], extrapolar=True
+    flat_forward = interpolador.Interpolador(
+        curva["dias_uteis"], curva["taxa_zero"], "flat_forward", extrapolar=True
     )
-    return fluxos.with_columns(dias_uteis=dias_uteis, taxa=taxas)
+    return fluxos.with_columns(dias_uteis=dias_uteis, taxa=flat_forward(dias_uteis))
 
 
 def cotacao_curva_zero(

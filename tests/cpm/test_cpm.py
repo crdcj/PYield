@@ -33,7 +33,7 @@ TOTAL_CPM_20261030 = 47
         ("CPMF25P099500", 1, 2025, "put", -50),
     ],
 )
-def test_parse_ticker_valid(  # noqa: PLR0913, PLR0917
+def test_parse_ticker_valid(
     monkeypatch,
     ticker,
     mes_esperado,

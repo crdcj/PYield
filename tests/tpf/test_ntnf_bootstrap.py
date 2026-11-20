@@ -25,7 +25,7 @@ def test_curva_conjunta_preserva_ltn_e_reprecifica_ntnf():
         ["01-01-2033", "01-01-2029", "01-01-2031", "01-01-2027"],
         [0.145, 0.50, 0.143, 0.13],
     )
-    interpolar = yd.Interpolador(
+    flat_forward = yd.Interpolador(
         curva["dias_uteis"], curva["taxa_zero"], "flat_forward"
     )
     for vencimento, taxa in [
@@ -33,7 +33,7 @@ def test_curva_conjunta_preserva_ltn_e_reprecifica_ntnf():
         ("01-01-2030", 0.14107),
         ("01-01-2032", 0.142765),
     ]:
-        assert interpolar(yd.du.contar(data, vencimento)) == pytest.approx(
+        assert flat_forward(yd.du.contar(data, vencimento)) == pytest.approx(
             taxa, abs=1e-14
         )
     for vencimento, tir in [
@@ -41,7 +41,7 @@ def test_curva_conjunta_preserva_ltn_e_reprecifica_ntnf():
         ("01-01-2031", 0.143),
         ("01-01-2033", 0.145),
     ]:
-        assert _preco(data, vencimento, interpolar) == pytest.approx(
+        assert _preco(data, vencimento, flat_forward) == pytest.approx(
             _preco(data, vencimento, tir), abs=1e-8, rel=0
         )
     assert curva.height == 6  # noqa: PLR2004

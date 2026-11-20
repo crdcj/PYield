@@ -343,7 +343,7 @@ def taxas_zero(
         ...     vencimentos=df["data_vencimento"],
         ...     taxas=df["taxa_indicativa"],
         ... )
-        >>> interpolar = yd.Interpolador(
+        >>> flat_forward = yd.Interpolador(
         ...     curva_decimal["dias_uteis"],
         ...     curva_decimal["taxa_zero"],
         ...     metodo="flat_forward",
@@ -351,7 +351,7 @@ def taxas_zero(
         >>> du_intermediario = (
         ...     curva_decimal["dias_uteis"][0] + curva_decimal["dias_uteis"][1]
         ... ) // 2
-        >>> 0 < interpolar(du_intermediario) < 1
+        >>> 0 < flat_forward(du_intermediario) < 1
         True
     """
     from pyield.tpf.titulos.ntnb import fluxos_caixa  # noqa: PLC0415

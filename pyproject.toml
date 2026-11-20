@@ -20,7 +20,7 @@ dependencies = [
     "fastexcel>=0.19.0",
     "tzdata>=2024.1; platform_system == 'Windows'",
 ]
-version = "0.65.0"
+version = "0.66.0"
 
 [project.urls]
 Homepage = "https://github.com/crdcj/PYield"
@@ -64,7 +64,10 @@ line-length = 88
 [tool.ruff.lint]
 preview = true
 select = ["I", "F", "E", "W", "PL", "PT"]
-ignore = ["E501"]
+ignore = ["E501", "PLR0913"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR0917"]
 
 [tool.ruff.format]
 docstring-code-format = true

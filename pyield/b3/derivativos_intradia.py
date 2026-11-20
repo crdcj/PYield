@@ -76,7 +76,7 @@ TIPOS = {orig: tipo for orig, _, tipo in COLUNAS_INTRADIA}
 def _buscar_json_intradia(contrato: str) -> list[dict]:
     url = f"{URL_BASE_INTRADIA}/{contrato}"
     cabecalhos = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"  # noqa: E501
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
     }
     resposta = requisitar(requests.get, url, headers=cabecalhos, timeout_leitura=5)
     resposta.encoding = "utf-8"

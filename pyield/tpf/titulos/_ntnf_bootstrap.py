@@ -37,7 +37,7 @@ def _preparar_titulos(
     )
 
 
-def _calibrar_zero(  # noqa: PLR0913, PLR0917
+def _calibrar_zero(  # noqa: PLR0917
     liquidacao: dt.date,
     vencimento: dt.date,
     tir: float,
@@ -53,11 +53,11 @@ def _calibrar_zero(  # noqa: PLR0913, PLR0917
     alvo = sum(cf / (1 + tir) ** (t / 252) for cf, t in zip(valores, prazos))
     anterior = dias[-1] if dias else 0
     desconto = (1 + taxas[-1]) ** (-anterior / 252) if dias else 1.0
-    interpolar = Interpolador(dias, taxas, "flat_forward") if dias else None
+    flat_forward = Interpolador(dias, taxas, "flat_forward") if dias else None
     conhecido = sum(
-        cf / (1 + interpolar(t)) ** (t / 252)
+        cf / (1 + flat_forward(t)) ** (t / 252)
         for cf, t in zip(valores, prazos)
-        if t <= anterior and interpolar is not None
+        if t <= anterior and flat_forward is not None
     )
     residual = alvo - conhecido
     if residual <= 0:
@@ -92,7 +92,7 @@ def _calibrar_zero(  # noqa: PLR0913, PLR0917
     return math.expm1((q - math.log(desconto)) * 252 / prazo)
 
 
-def taxas_zero_forwards(  # noqa: PLR0913, PLR0917
+def taxas_zero_forwards(  # noqa: PLR0917
     data_liquidacao: DateLike,
     vencimentos_ltn: DatesLike,
     taxas_ltn: ArrayLike,
@@ -190,12 +190,12 @@ def taxas_zero_forwards(  # noqa: PLR0913, PLR0917
         return curva
     datas_saida = pl.Series(sorted(set(datas) | cupons), dtype=pl.Date)
     dias_saida = du.contar(liquidacao, datas_saida)
-    interpolar = Interpolador(dias, taxas, "flat_forward")
+    flat_forward = Interpolador(dias, taxas, "flat_forward")
     return pl.DataFrame(
         {
             "data_vencimento": datas_saida,
             "dias_uteis": dias_saida,
-            "taxa_zero": [interpolar(t) for t in dias_saida],
+            "taxa_zero": flat_forward(dias_saida),
         },
         schema=esquema,
     )

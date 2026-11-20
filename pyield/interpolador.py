@@ -1,10 +1,10 @@
 import bisect
 import numbers
-from typing import Literal
+from typing import Any, Literal, overload
 
 import polars as pl
 
-from pyield._internal.types import ArrayLike
+from pyield._internal.types import ArrayLike, is_array_like
 
 
 def _rejeitar_vertices_conflitantes(
@@ -38,23 +38,61 @@ def _rejeitar_vertices_conflitantes(
     )
 
 
+def _dus_inteiros(dus: pl.Series, nome: str) -> pl.Series:
+    """Exige DUs de tipo inteiro e os devolve como Int64.
+
+    Série vazia ou só com nulos não tem tipo definido e é aceita. O prazo em
+    dias úteis é inteiro por definição: uma coluna float, texto ou decimal
+    indica erro anterior no pipeline e não é convertida em silêncio.
+    """
+    if dus.dtype != pl.Null and not dus.dtype.is_integer():
+        raise TypeError(
+            f"{nome} deve ter tipo inteiro, mas tem {dus.dtype}. "
+            "Converta os prazos para inteiro antes de interpolar."
+        )
+    return dus.cast(pl.Int64)
+
+
+def _linear(du: Any, du_j: Any, tx_j: Any, du_k: Any, tx_k: Any) -> Any:
+    """Interpola linearmente a taxa entre os vértices j e k."""
+    return tx_j + (du - du_j) * (tx_k - tx_j) / (du_k - du_j)
+
+
+def _flat_forward(du: Any, du_j: Any, tx_j: Any, du_k: Any, tx_k: Any) -> Any:
+    """Interpola o fator acumulado entre os vértices j e k (flat-forward)."""
+    au, au_j, au_k = du / 252, du_j / 252, du_k / 252
+    # Fator acumulado de cada vértice e peso temporal da interpolação.
+    fa_j = (1 + tx_j) ** au_j
+    fa_k = (1 + tx_k) ** au_k
+    peso = (au - au_j) / (au_k - au_j)
+    return (fa_j * (fa_k / fa_j) ** peso) ** (1 / au) - 1
+
+
+# As fórmulas usam apenas operadores aritméticos e por isso servem tanto à
+# classe (float) quanto à função ``interpolar`` (pl.Expr); daí os argumentos Any.
+_FORMULAS = {"flat_forward": _flat_forward, "linear": _linear}
+
+
 class Interpolador:
     r"""Classe interpoladora para interpolação de taxas de juros.
 
     Args:
-        dias_uteis: Sequência de dias úteis (DU) conhecidos.
+        dias_uteis: Sequência de dias úteis (DU) conhecidos, de tipo inteiro.
+            Vértices com DU negativo são ignorados, assim como os de DU nulo
+            ou de taxa nula ou NaN.
         taxas: Sequência de taxas de juros conhecidas.
         metodo: Método de interpolação a usar. Opções: "flat_forward" ou "linear".
         extrapolar: Controla apenas o comportamento na ponta longa (DU acima
             do maior vértice conhecido). Se True, retorna a última taxa
             conhecida; se False (padrão), retorna NaN. A ponta curta (DU
-            abaixo do menor vértice) sempre retorna a primeira taxa conhecida,
-            independentemente desta flag.
+            abaixo do menor vértice, inclusive zero) sempre retorna a primeira
+            taxa conhecida, independentemente desta flag.
 
     Raises:
         ValueError: Se ``metodo`` não for ``"flat_forward"`` nem ``"linear"``,
             se não houver ao menos um vértice válido na curva ou se a curva
             tiver o mesmo prazo com taxas diferentes.
+        TypeError: Se ``dias_uteis`` não for de tipo inteiro.
 
     Notes:
         - Esta classe usa convenção de 252 dias úteis por ano.
@@ -104,6 +142,16 @@ class Interpolador:
         >>> print(flat_fwd(-10))  # Entrada inválida retorna NaN
         nan
 
+        Vários prazos de uma vez; os casos sem taxa ficam nulos:
+        >>> flat_fwd([45, 100, -10])
+        shape: (3,)
+        Series: 'taxa_interpolada' [f64]
+        [
+            0.048331
+            null
+            null
+        ]
+
         Se extrapolação estiver habilitada, a última taxa conhecida é usada:
         >>> flat_fwd_extrap = Interpolador(dus, txs, "flat_forward", extrapolar=True)
         >>> flat_fwd_extrap(100)
@@ -117,16 +165,15 @@ class Interpolador:
         metodo: Literal["flat_forward", "linear"],
         extrapolar: bool = False,
     ):
-        if metodo not in {"flat_forward", "linear"}:
+        if metodo not in _FORMULAS:
             raise ValueError(f"Método de interpolação '{metodo}' não reconhecido.")
+        dus = _dus_inteiros(pl.Series("dus", dias_uteis), "dias_uteis")
         df = (
-            pl.DataFrame({"dus": dias_uteis, "txs": taxas})
-            .with_columns(
-                dus=pl.col("dus").cast(pl.Int64),
-                txs=pl.col("txs").cast(pl.Float64),
-            )
+            pl.DataFrame({"dus": dus, "txs": taxas})
+            .with_columns(txs=pl.col("txs").cast(pl.Float64))
             .drop_nulls()
             .drop_nans()
+            .filter(pl.col("dus") >= 0)
         )
         df = _rejeitar_vertices_conflitantes(df, "dus", "txs").sort("dus")
         if df.is_empty():
@@ -137,72 +184,73 @@ class Interpolador:
         self._txs = tuple(df.get_column("txs"))
         self._extrapolar = bool(extrapolar)
 
-    def _linear(self, du: int, k: int) -> float:
-        """Calcula internamente a interpolação linear entre dois vértices."""
-        # Obtém os pontos imediatamente anterior e posterior ao DU desejado.
-        du_j, tx_j = self._dus[k - 1], self._txs[k - 1]
-        du_k, tx_k = self._dus[k], self._txs[k]
+    @overload
+    def interpolar(self, du: int) -> float: ...
+    @overload
+    def interpolar(self, du: ArrayLike) -> pl.Series: ...
+    def interpolar(self, du: int | ArrayLike) -> float | pl.Series:
+        """Interpola a taxa para um dia útil ou para uma sequência de dias úteis.
 
-        return tx_j + (du - du_j) * (tx_k - tx_j) / (du_k - du_j)
-
-    def _flat_forward(self, du: int, k: int) -> float:
-        """Calcula internamente a interpolação flat-forward entre dois vértices."""
-        tx_j = self._txs[k - 1]
-        au_j = self._dus[k - 1] / 252
-        tx_k = self._txs[k]
-        au_k = self._dus[k] / 252
-        au = du / 252
-
-        # Fator simples, fator acumulado e peso temporal da interpolação.
-        fs_j = 1 + tx_j
-        fs_k = 1 + tx_k
-        fa_j = fs_j**au_j
-        fa_k = fs_k**au_k
-        peso = (au - au_j) / (au_k - au_j)
-        return (fa_j * (fa_k / fa_j) ** peso) ** (1 / au) - 1
-
-    def interpolar(self, du: int) -> float:
-        """Interpola a taxa para um único dia útil.
+        A instância pode ser chamada diretamente: ``flat_forward(du)`` é o
+        atalho de ``flat_forward.interpolar(du)``.
 
         Args:
-            du: DU escalar inteiro para interpolação.
+            du: DU inteiro ou sequência de DUs inteiros (lista, tupla ou
+                ``pl.Series``).
 
         Returns:
-            Taxa interpolada como float. Retorna ``float("nan")`` quando o DU
-            for negativo ou estiver acima do maior vértice conhecido com
-            ``extrapolar=False``. DU abaixo do menor vértice sempre retorna
-            a primeira taxa conhecida.
+            Para DU escalar, a taxa interpolada como float; ``float("nan")``
+            quando o DU for negativo ou estiver acima do maior vértice
+            conhecido com ``extrapolar=False``. Para uma sequência, Series
+            Float64 ``taxa_interpolada`` na mesma ordem da entrada, com
+            ``null`` nesses mesmos casos e quando o DU for nulo. DU abaixo
+            do menor vértice, inclusive zero, sempre retorna a primeira taxa
+            conhecida.
 
         Raises:
-            TypeError: Se ``du`` não for um inteiro.
+            TypeError: Se ``du`` não for um inteiro nem uma sequência de tipo
+                inteiro. Float é rejeitado, mesmo com valor inteiro.
+
+        Examples:
+            >>> from pyield import Interpolador
+            >>> flat_forward = Interpolador(
+            ...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"
+            ... )
+            >>> flat_forward.interpolar(45)
+            0.04833068080970859
+
+            A chamada direta da instância dá o mesmo resultado:
+            >>> flat_forward(45)
+            0.04833068080970859
+
+            >>> flat_forward([15, 45, 100])
+            shape: (3,)
+            Series: 'taxa_interpolada' [f64]
+            [
+                0.045
+                0.048331
+                null
+            ]
         """
+        if is_array_like(du):
+            return self._interpolar_serie(du)
         # Aceita qualquer tipo integral (int, np.int64, etc) e rejeita float/string.
         if not isinstance(du, numbers.Integral):
-            raise TypeError("du deve ser int. Use interpolar_expr para coluna Polars.")
+            raise TypeError(
+                "du deve ser int ou sequência de inteiros. "
+                "Use interpolar_expr para coluna Polars."
+            )
         return self._taxa_interpolada(int(du))
 
+    # Chamar a instância é o atalho de ``interpolar``: ``flat_forward(du)``.
+    __call__ = interpolar
+
     def _interpolar_serie(self, du: ArrayLike) -> pl.Series:
-        """Interpola taxas para uma sequência de dias úteis.
-
-        Helper interno usado por ``interpolar_expr`` via ``map_batches``.
-        A API pública para uso vetorizado é ``interpolar_expr`` (composição
-        com expressões Polars) ou a função top-level ``interpolar`` (curva
-        única ou multi-curva, a partir de Series).
-
-        Args:
-            du: Sequência de DUs (lista, tupla, ``pl.Series``, ``np.ndarray``,
-                etc.) com os pontos a interpolar.
-
-        Returns:
-            ``pl.Series`` Float64 chamada ``taxa_interpolada`` na mesma ordem
-            da entrada. ``null`` quando o DU for nulo, negativo, ou estiver
-            acima do maior vértice conhecido com ``extrapolar=False``.
-        """
+        """Interpola uma sequência de DUs; também serve a ``interpolar_expr``."""
         return (
-            pl.Series(values=du, dtype=pl.Int64)
+            _dus_inteiros(pl.Series("taxa_interpolada", du), "du")
             .map_elements(self._taxa_interpolada, return_dtype=pl.Float64)
             .fill_nan(None)
-            .alias("taxa_interpolada")
         )
 
     def interpolar_expr(self, du: str | pl.Expr) -> pl.Expr:
@@ -215,7 +263,8 @@ class Interpolador:
 
         Args:
             du: Nome de coluna ou expressão Polars com os DUs alvo. A coluna
-                deve ser inteira (será convertida para Int64 internamente).
+                deve ser de tipo inteiro; outro tipo gera ``TypeError`` na
+                execução da expressão.
 
         Returns:
             pl.Expr: Expressão Float64 sem alias com as taxas interpoladas.
@@ -224,11 +273,11 @@ class Interpolador:
 
         Examples:
             >>> from pyield import Interpolador
-            >>> interp = Interpolador(
+            >>> flat_forward = Interpolador(
             ...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"
             ... )
             >>> df = pl.DataFrame({"du": [15, 45, 75]})
-            >>> df.with_columns(taxa=interp.interpolar_expr("du"))
+            >>> df.with_columns(taxa=flat_forward.interpolar_expr("du"))
             shape: (3, 2)
             ┌─────┬──────────┐
             │ du  ┆ taxa     │
@@ -278,24 +327,8 @@ class Interpolador:
         if dus[k] == du:
             return txs[k]
 
-        if self._metodo == "linear":
-            return self._linear(du, k)
-        return self._flat_forward(du, k)
-
-    def __call__(self, du: int) -> float:
-        """Atalho escalar para ``interpolar``.
-
-        Para interpolação vetorizada, use ``interpolar_expr`` (em pipelines
-        Polars) ou a função top-level ``pyield.interpolar`` (curva única ou
-        multi-curva, a partir de Series).
-
-        Args:
-            du: DU escalar inteiro.
-
-        Returns:
-            Taxa interpolada como float.
-        """
-        return self.interpolar(du)
+        formula = _FORMULAS[self._metodo]
+        return formula(du, dus[k - 1], txs[k - 1], dus[k], txs[k])
 
     def __repr__(self) -> str:
         """Representação textual, usada em terminal ou scripts."""
@@ -306,57 +339,67 @@ class Interpolador:
         return len(self._df)
 
 
-def interpolar(  # noqa: PLR0913
+def interpolar(
+    *,
+    datas_alvo: pl.Series,
     dus_alvo: pl.Series,
+    datas_curva: pl.Series,
     dus_curva: pl.Series,
     taxas_curva: pl.Series,
-    *,
-    datas_alvo: pl.Series | None = None,
-    datas_curva: pl.Series | None = None,
+    metodo: Literal["flat_forward", "linear"],
     extrapolar: bool = False,
 ) -> pl.Series:
-    r"""Interpola taxas flat-forward para uma série de pontos alvo.
+    r"""Interpola taxas em lote, com uma curva por data de referência.
 
-    Versão vetorizada de ``Interpolador``. Quando ``datas_alvo`` e
-    ``datas_curva`` são fornecidas, cada ponto é interpolado contra a
-    curva da sua data correspondente (multi-curva, sem loop em Python).
-    Quando ambas são ``None``, todos os pontos usam a mesma curva.
+    Cada ponto alvo é interpolado contra a curva da sua data de referência
+    (multi-curva, sem loop em Python). Todos os parâmetros são nomeados.
 
     O resultado pode ser adicionado a um DataFrame via ``with_columns``,
     preservando a ordem original de ``dus_alvo``.
 
     Args:
-        dus_alvo: Series Int com os dias úteis dos pontos a interpolar.
-        dus_curva: Series Int com os dias úteis dos vértices conhecidos.
+        datas_alvo: Series Date com a data de referência de cada ponto
+            alvo.
+        dus_alvo: Series Int com os dias úteis dos pontos a interpolar
+            (mesma ordem de ``datas_alvo``).
+        datas_curva: Series Date com a data de referência de cada
+            vértice da curva.
+        dus_curva: Series Int com os dias úteis dos vértices conhecidos
+            (mesma ordem de ``datas_curva``). Vértices com DU negativo são
+            ignorados, assim como os de DU nulo ou de taxa nula ou NaN.
         taxas_curva: Series Float com as taxas dos vértices conhecidos
             (mesma ordem de ``dus_curva``).
-        datas_alvo: Series Date com a data de referência de cada ponto
-            alvo. Quando fornecida, ``datas_curva`` também deve ser.
-            Padrão: ``None`` (curva única).
-        datas_curva: Series Date com a data de referência de cada
-            vértice da curva. Padrão: ``None`` (curva única).
+        metodo: Método de interpolação a usar. Opções: "flat_forward" ou
+            "linear".
         extrapolar: Controla apenas o comportamento na ponta longa (DU acima
             do maior vértice de cada grupo). Se True, retorna a última taxa
             conhecida; se False (padrão), retorna ``null``. A ponta curta
-            (DU abaixo do menor vértice) sempre retorna a primeira taxa do
-            grupo, independentemente desta flag. O default casa com o da
-            classe ``Interpolador``.
+            (DU abaixo do menor vértice, inclusive zero) sempre retorna a
+            primeira taxa do grupo, independentemente desta flag. O default
+            casa com o da classe ``Interpolador``.
 
     Returns:
         Series Float64 ``taxa_interpolada`` na mesma ordem de
-        ``dus_alvo``. ``null`` quando o DU é nulo, a data alvo não existe
-        na curva, ou o DU está acima do maior vértice e ``extrapolar`` é
-        False.
+        ``dus_alvo``. ``null`` quando o DU é nulo ou negativo, a data alvo
+        não existe na curva, ou o DU está acima do maior vértice e
+        ``extrapolar`` é False.
 
     Raises:
-        ValueError: Se apenas uma de ``datas_alvo`` ou ``datas_curva``
-            for fornecida, ou se a curva tiver o mesmo prazo com taxas
-            diferentes (na mesma data, quando há várias curvas).
+        ValueError: Se ``metodo`` não for ``"flat_forward"`` nem
+            ``"linear"``, ou se uma curva tiver o mesmo prazo com taxas
+            diferentes na mesma data.
+        TypeError: Se ``dus_alvo`` ou ``dus_curva`` não for de tipo inteiro.
 
     Notes:
-        Usa a mesma fórmula flat-forward descrita na documentação de
+        Usa as mesmas fórmulas descritas na documentação de
         ``Interpolador``. Os vértices que cercam cada prazo alvo são
         encontrados automaticamente.
+
+        A função existe para o processamento em lote: interpolar de uma vez
+        os pontos de muitas datas de referência, como no reprocessamento de
+        uma base histórica inteira, em que criar um ``Interpolador`` por data
+        seria muito mais lento. Para uma única curva, ``Interpolador`` é o
+        caminho indicado e permite reutilizar a curva em várias consultas.
 
     Examples:
         Caso típico: adicionar uma coluna de taxas interpoladas a um
@@ -377,11 +420,12 @@ def interpolar(  # noqa: PLR0913
         ... )
         >>> df.with_columns(
         ...     taxa=yd.interpolar(
+        ...         datas_alvo=df["data_referencia"],
         ...         dus_alvo=df["dias_uteis"],
+        ...         datas_curva=df_curva["data_referencia"],
         ...         dus_curva=df_curva["dias_uteis"],
         ...         taxas_curva=df_curva["taxa"],
-        ...         datas_alvo=df["data_referencia"],
-        ...         datas_curva=df_curva["data_referencia"],
+        ...         metodo="flat_forward",
         ...     )
         ... )
         shape: (2, 3)
@@ -393,66 +437,40 @@ def interpolar(  # noqa: PLR0913
         │ 2025-01-02      ┆ 10         ┆ 0.113293 │
         │ 2025-01-02      ┆ 25         ┆ 0.123323 │
         └─────────────────┴────────────┴──────────┘
-
-        Curva única (sem datas):
-
-        >>> yd.interpolar(
-        ...     dus_alvo=pl.Series([10, 25]),
-        ...     dus_curva=pl.Series([5, 20, 50]),
-        ...     taxas_curva=pl.Series([0.10, 0.12, 0.13]),
-        ... )
-        shape: (2,)
-        Series: 'taxa_interpolada' [f64]
-        [
-            0.113293
-            0.123323
-        ]
     """
-    if (datas_alvo is None) != (datas_curva is None):
-        raise ValueError(
-            "datas_alvo e datas_curva devem ser fornecidas juntas ou omitidas juntas."
-        )
-
-    if datas_alvo is not None and datas_curva is not None:
-        df_alvo = pl.DataFrame({"grupo": datas_alvo, "du_alvo": dus_alvo})
-        df_curva = pl.DataFrame(
-            {"grupo": datas_curva, "du": dus_curva, "tx": taxas_curva}
-        )
-    else:
-        df_alvo = pl.DataFrame({"du_alvo": dus_alvo}).with_columns(
-            grupo=pl.lit(0, dtype=pl.Int32)
-        )
-        df_curva = pl.DataFrame({"du": dus_curva, "tx": taxas_curva}).with_columns(
-            grupo=pl.lit(0, dtype=pl.Int32)
-        )
-
-    df_alvo = df_alvo.with_columns(
-        du_alvo=pl.col("du_alvo").cast(pl.Int64, strict=False),
-    ).with_row_index("_idx")
-
+    if metodo not in _FORMULAS:
+        raise ValueError(f"Método de interpolação '{metodo}' não reconhecido.")
+    df_alvo = pl.DataFrame(
+        {"grupo": datas_alvo, "du_alvo": _dus_inteiros(dus_alvo, "dus_alvo")}
+    )
     df_curva = (
-        df_curva.with_columns(
-            du=pl.col("du").cast(pl.Int64, strict=False),
-            tx=pl.col("tx").cast(pl.Float64, strict=False),
+        pl.DataFrame(
+            {
+                "grupo": datas_curva,
+                "dus": _dus_inteiros(dus_curva, "dus_curva"),
+                "txs": taxas_curva,
+            }
         )
+        .with_columns(txs=pl.col("txs").cast(pl.Float64, strict=False))
         .drop_nulls()
         .drop_nans()
+        .filter(pl.col("dus") >= 0)
     )
-    grupo = "grupo" if datas_curva is not None else None
-    df_curva = _rejeitar_vertices_conflitantes(df_curva, "du", "tx", grupo).sort(
-        "grupo", "du"
+    df_curva = _rejeitar_vertices_conflitantes(df_curva, "dus", "txs", "grupo").sort(
+        "grupo", "dus"
     )
 
     # j = último vértice com du <= du_alvo; k = primeiro com du >= du_alvo.
     # Sem j, o alvo está antes do primeiro vértice; sem k, depois do último.
     # Alvo nulo ou grupo sem curva deixa j e k nulos e resulta em nulo.
-    # df_alvo é ordenado por (grupo, du_alvo) e df_curva já vem ordenado por
-    # (grupo, du); com isso podemos desligar check_sortedness, que também
-    # silencia o aviso do Polars quando se usa `by=`.
+    # As duas tabelas estão ordenadas por (grupo, du); com isso podemos
+    # desligar check_sortedness, que também silencia o aviso do Polars quando
+    # se usa `by=`.
     df = (
-        df_alvo.sort("grupo", "du_alvo")
+        df_alvo.with_row_index("_idx")
+        .sort("grupo", "du_alvo")
         .join_asof(
-            df_curva.rename({"du": "du_j", "tx": "tx_j"}),
+            df_curva.rename({"dus": "du_j", "txs": "tx_j"}),
             by="grupo",
             left_on="du_alvo",
             right_on="du_j",
@@ -460,7 +478,7 @@ def interpolar(  # noqa: PLR0913
             check_sortedness=False,
         )
         .join_asof(
-            df_curva.rename({"du": "du_k", "tx": "tx_k"}),
+            df_curva.rename({"dus": "du_k", "txs": "tx_k"}),
             by="grupo",
             left_on="du_alvo",
             right_on="du_k",
@@ -469,27 +487,20 @@ def interpolar(  # noqa: PLR0913
         )
     )
 
-    # Flat-forward: tx = (Cⱼ * (Cₖ / Cⱼ)^w)^(1/au) - 1,
-    # com Fₓ = 1 + txₓ, Cₓ = Fₓ^auₓ e w = (au - auⱼ) / (auₖ - auⱼ).
-    au = pl.col("du_alvo") / 252
-    au_j = pl.col("du_j") / 252
-    au_k = pl.col("du_k") / 252
-    fa_j = (1 + pl.col("tx_j")).pow(au_j)
-    fa_k = (1 + pl.col("tx_k")).pow(au_k)
-    peso = (au - au_j) / (au_k - au_j)
-    expr_meio = (fa_j * (fa_k / fa_j).pow(peso)).pow(1 / au) - 1
-
+    du, du_j, du_k = pl.col("du_alvo"), pl.col("du_j"), pl.col("du_k")
+    tx_j, tx_k = pl.col("tx_j"), pl.col("tx_k")
     nulo = pl.lit(None, dtype=pl.Float64)
     taxa = (
-        pl.when(pl.col("du_j") == pl.col("du_alvo"))
-        .then(pl.col("tx_j"))
-        .when(pl.col("du_j").is_null())
-        .then(pl.col("tx_k"))
-        .when(pl.col("du_k").is_null())
-        .then(pl.col("tx_j") if extrapolar else nulo)
-        .otherwise(expr_meio)
+        pl.when(du < 0)
+        .then(nulo)
+        .when(du_j == du)
+        .then(tx_j)
+        .when(du_j.is_null())
+        .then(tx_k)
+        .when(du_k.is_null())
+        .then(tx_j if extrapolar else nulo)
+        .otherwise(_FORMULAS[metodo](du, du_j, tx_j, du_k, tx_k))
     )
-
     return (
         df.with_columns(taxa_interpolada=taxa)
         .sort("_idx")["taxa_interpolada"]

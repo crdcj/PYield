@@ -1,5 +1,6 @@
 import datetime as dt
 import importlib
+import math
 from typing import Any, cast
 
 import polars as pl
@@ -121,3 +122,14 @@ def test_interpolar_taxa_repassa_tipo_taxa(monkeypatch: pytest.MonkeyPatch):
     )
 
     assert taxa == TAXA_FECHAMENTO_CURTA
+
+
+def test_interpolar_taxas_retorna_nulo_para_vencimento_anterior_a_referencia(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(di1, "buscar_historico_cacheado", _historico_di1_fake)
+
+    taxas = di1.interpolar_taxas("02-01-2025", ["30-12-2024", "03-01-2025"])
+
+    assert taxas.to_list() == [None, 0.10]
+    assert math.isnan(di1.interpolar_taxa("02-01-2025", "30-12-2024"))

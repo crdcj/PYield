@@ -153,11 +153,10 @@ def taxa(
         return float("nan")
 
     curva = _utils.validar_curva_zero(curva_zero)
-    return interpolador.Interpolador(
-        curva["dias_uteis"],
-        curva["taxa_zero"],
-        metodo="flat_forward",
-    ).interpolar(dias_uteis)
+    flat_forward = interpolador.Interpolador(
+        curva["dias_uteis"], curva["taxa_zero"], metodo="flat_forward"
+    )
+    return flat_forward(dias_uteis)
 
 
 def dv01(

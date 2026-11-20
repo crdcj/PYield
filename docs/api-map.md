@@ -271,7 +271,7 @@ Visão geral das principais funções públicas do PYield.
     yd.Interpolador
     ```
 
-??? "`yd.interpolar` (interpolação direta de curvas)"
+??? "`yd.interpolar` (interpolação em lote, uma curva por data)"
     ```text
     yd.interpolar(...)
     ```

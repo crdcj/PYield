@@ -411,7 +411,7 @@ def pu(
     return _utils.pu_por_vna(vna, cotacao)
 
 
-def implicitas(  # noqa: PLR0913
+def implicitas(
     data_liquidacao: DateLike,
     vencimentos_tir: DatesLike,
     taxas_tir: ArrayLike,
@@ -551,13 +551,13 @@ def implicitas(  # noqa: PLR0913
                 "inflacao_implicita": pl.Float64,
             }
         )
-    interpolador_ff = interpolador.Interpolador(
+    flat_forward = interpolador.Interpolador(
         dias_uteis=du.contar(data_liquidacao, vencimentos_nominais),
         taxas=taxas_nominais,
         metodo="flat_forward",
         extrapolar=extrapolar,
     )
-    taxa_nominal_expr = interpolador_ff.interpolar_expr("dias_uteis")
+    taxa_nominal_expr = flat_forward.interpolar_expr("dias_uteis")
     return taxas_zero(data_liquidacao, vencimentos_tir, taxas_tir).select(
         "data_vencimento",
         "dias_uteis",

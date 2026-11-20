@@ -6,6 +6,7 @@ orientações de migração. Consulte também as
 
 | Versão | Principais mudanças |
 |---|---|
+| [0.66.0](release-0.66.0.md) | `yd.interpolar` dedicada ao cálculo em lote, com datas e método obrigatórios e parâmetros nomeados; `Interpolador` aceita sequência de prazos; prazo negativo sem taxa e prazo de tipo não inteiro com erro no interpolador. |
 | [0.65.0](release-0.65.0.md) | Projeção vigente de IPCA e IGP-M pela página de projeções da ANBIMA, com data de coleta e de validade, em `yd.ipca.taxa_projetada` e no novo `yd.igpm.taxa_projetada`; mês de referência das séries mensais como `competencia` (`Date`). |
 | [0.64.1](release-0.64.1.md) | Timeout de leitura menor na primeira tentativa e dobrado na retentativa, com limites revistos por fonte; correção de `ComputeError` em `yd.cpm.contratos`. |
 | [0.64.0](release-0.64.0.md) | Fonte explícita em `yd.tpf.leiloes` (`fonte="tn"` ou `fonte="bc"`) e remoção de `yd.tpf.leiloes_bcb`; taxas de `yd.tpf.secundario.mensal` em decimal; `nome_comercial` obrigatório em `yd.ntnb1.dv01`; erro para prazos conflitantes na curva zero e no interpolador; duration sem truncamento; ofertas de compra e venda de `yd.futuro.historico` na convenção da B3; correções em prêmio limpo, curvas zero e leilões. |
