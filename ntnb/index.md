@@ -706,7 +706,7 @@ A curva retornada contém apenas os vencimentos informados. Para estimar uma tax
 ...     vencimentos=df["data_vencimento"],
 ...     taxas=df["taxa_indicativa"],
 ... )
->>> interpolar = yd.Interpolador(
+>>> flat_forward = yd.Interpolador(
 ...     curva_decimal["dias_uteis"],
 ...     curva_decimal["taxa_zero"],
 ...     metodo="flat_forward",
@@ -714,7 +714,7 @@ A curva retornada contém apenas os vencimentos informados. Para estimar uma tax
 >>> du_intermediario = (
 ...     curva_decimal["dias_uteis"][0] + curva_decimal["dias_uteis"][1]
 ... ) // 2
->>> 0 < interpolar(du_intermediario) < 1
+>>> 0 < flat_forward(du_intermediario) < 1
 True
 ```
 

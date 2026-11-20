@@ -4,16 +4,17 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `dias_uteis` | `ArrayLike` | Sequência de dias úteis (DU) conhecidos. | *required* |
+| `dias_uteis` | `ArrayLike` | Sequência de dias úteis (DU) conhecidos, de tipo inteiro. Vértices com DU negativo são ignorados, assim como os de DU nulo ou de taxa nula ou NaN. | *required* |
 | `taxas` | `ArrayLike` | Sequência de taxas de juros conhecidas. | *required* |
 | `metodo` | `Literal['flat_forward', 'linear']` | Método de interpolação a usar. Opções: "flat\_forward" ou "linear". | *required* |
-| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice conhecido). Se True, retorna a última taxa conhecida; se False (padrão), retorna NaN. A ponta curta (DU abaixo do menor vértice) sempre retorna a primeira taxa conhecida, independentemente desta flag. | `False` |
+| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice conhecido). Se True, retorna a última taxa conhecida; se False (padrão), retorna NaN. A ponta curta (DU abaixo do menor vértice, inclusive zero) sempre retorna a primeira taxa conhecida, independentemente desta flag. | `False` |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
 | `ValueError` | Se `metodo` não for `"flat_forward"` nem `"linear"`, se não houver ao menos um vértice válido na curva ou se a curva tiver o mesmo prazo com taxas diferentes. |
+| `TypeError` | Se `dias_uteis` não for de tipo inteiro. |
 
 **Notes**
 
@@ -66,6 +67,19 @@ nan
 nan
 ```
 
+Vários prazos de uma vez; os casos sem taxa ficam nulos:
+
+```pycon
+>>> flat_fwd([45, 100, -10])
+shape: (3,)
+Series: 'taxa_interpolada' [f64]
+[
+    0.048331
+    null
+    null
+]
+```
+
 Se extrapolação estiver habilitada, a última taxa conhecida é usada:
 
 ```pycon
@@ -76,28 +90,62 @@ Se extrapolação estiver habilitada, a última taxa conhecida é usada:
 
 ## `interpolar(du)`
 
-Interpola a taxa para um único dia útil.
+Interpola a taxa para um dia útil ou para uma sequência de dias úteis.
+
+A instância pode ser chamada diretamente: `flat_forward(du)` é o atalho de `flat_forward.interpolar(du)`.
 
 Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `du` | `int` | DU escalar inteiro para interpolação. | *required* |
+| `du` | `int \| ArrayLike` | DU inteiro ou sequência de DUs inteiros (lista, tupla ou `pl.Series`). | *required* |
 
 Returns:
 
 | Type | Description |
 | --- | --- |
-| `float` | Taxa interpolada como float. Retorna `float("nan")` quando o DU |
-| `float` | for negativo ou estiver acima do maior vértice conhecido com |
-| `float` | `extrapolar=False`. DU abaixo do menor vértice sempre retorna |
-| `float` | a primeira taxa conhecida. |
+| `float \| Series` | Para DU escalar, a taxa interpolada como float; `float("nan")` |
+| `float \| Series` | quando o DU for negativo ou estiver acima do maior vértice |
+| `float \| Series` | conhecido com `extrapolar=False`. Para uma sequência, Series |
+| `float \| Series` | Float64 `taxa_interpolada` na mesma ordem da entrada, com |
+| `float \| Series` | `null` nesses mesmos casos e quando o DU for nulo. DU abaixo |
+| `float \| Series` | do menor vértice, inclusive zero, sempre retorna a primeira taxa |
+| `float \| Series` | conhecida. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
-| `TypeError` | Se `du` não for um inteiro. |
+| `TypeError` | Se `du` não for um inteiro nem uma sequência de tipo inteiro. Float é rejeitado, mesmo com valor inteiro. |
+
+Examples:
+
+```pycon
+>>> from pyield import Interpolador
+>>> flat_forward = Interpolador(
+...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"
+... )
+>>> flat_forward.interpolar(45)
+0.04833068080970859
+```
+
+A chamada direta da instância dá o mesmo resultado:
+
+```pycon
+>>> flat_forward(45)
+0.04833068080970859
+```
+
+```pycon
+>>> flat_forward([15, 45, 100])
+shape: (3,)
+Series: 'taxa_interpolada' [f64]
+[
+    0.045
+    0.048331
+    null
+]
+```
 
 ## `interpolar_expr(du)`
 
@@ -109,7 +157,7 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `du` | `str \| Expr` | Nome de coluna ou expressão Polars com os DUs alvo. A coluna deve ser inteira (será convertida para Int64 internamente). | *required* |
+| `du` | `str \| Expr` | Nome de coluna ou expressão Polars com os DUs alvo. A coluna deve ser de tipo inteiro; outro tipo gera `TypeError` na execução da expressão. | *required* |
 
 Returns:
 
@@ -121,11 +169,11 @@ Examples:
 
 ```pycon
 >>> from pyield import Interpolador
->>> interp = Interpolador(
+>>> flat_forward = Interpolador(
 ...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"
 ... )
 >>> df = pl.DataFrame({"du": [15, 45, 75]})
->>> df.with_columns(taxa=interp.interpolar_expr("du"))
+>>> df.with_columns(taxa=flat_forward.interpolar_expr("du"))
 shape: (3, 2)
 ┌─────┬──────────┐
 │ du  ┆ taxa     │
@@ -140,9 +188,9 @@ shape: (3, 2)
 
 ## interpolar
 
-Interpola taxas flat-forward para uma série de pontos alvo.
+Interpola taxas em lote, com uma curva por data de referência.
 
-Versão vetorizada de `Interpolador`. Quando `datas_alvo` e `datas_curva` são fornecidas, cada ponto é interpolado contra a curva da sua data correspondente (multi-curva, sem loop em Python). Quando ambas são `None`, todos os pontos usam a mesma curva.
+Cada ponto alvo é interpolado contra a curva da sua data de referência (multi-curva, sem loop em Python). Todos os parâmetros são nomeados.
 
 O resultado pode ser adicionado a um DataFrame via `with_columns`, preservando a ordem original de `dus_alvo`.
 
@@ -150,31 +198,35 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `dus_alvo` | `Series` | Series Int com os dias úteis dos pontos a interpolar. | *required* |
-| `dus_curva` | `Series` | Series Int com os dias úteis dos vértices conhecidos. | *required* |
+| `datas_alvo` | `Series` | Series Date com a data de referência de cada ponto alvo. | *required* |
+| `dus_alvo` | `Series` | Series Int com os dias úteis dos pontos a interpolar (mesma ordem de `datas_alvo`). | *required* |
+| `datas_curva` | `Series` | Series Date com a data de referência de cada vértice da curva. | *required* |
+| `dus_curva` | `Series` | Series Int com os dias úteis dos vértices conhecidos (mesma ordem de `datas_curva`). Vértices com DU negativo são ignorados, assim como os de DU nulo ou de taxa nula ou NaN. | *required* |
 | `taxas_curva` | `Series` | Series Float com as taxas dos vértices conhecidos (mesma ordem de `dus_curva`). | *required* |
-| `datas_alvo` | `Series \| None` | Series Date com a data de referência de cada ponto alvo. Quando fornecida, `datas_curva` também deve ser. Padrão: `None` (curva única). | `None` |
-| `datas_curva` | `Series \| None` | Series Date com a data de referência de cada vértice da curva. Padrão: `None` (curva única). | `None` |
-| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice de cada grupo). Se True, retorna a última taxa conhecida; se False (padrão), retorna `null`. A ponta curta (DU abaixo do menor vértice) sempre retorna a primeira taxa do grupo, independentemente desta flag. O default casa com o da classe `Interpolador`. | `False` |
+| `metodo` | `Literal['flat_forward', 'linear']` | Método de interpolação a usar. Opções: "flat\_forward" ou "linear". | *required* |
+| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice de cada grupo). Se True, retorna a última taxa conhecida; se False (padrão), retorna `null`. A ponta curta (DU abaixo do menor vértice, inclusive zero) sempre retorna a primeira taxa do grupo, independentemente desta flag. O default casa com o da classe `Interpolador`. | `False` |
 
 Returns:
 
 | Type | Description |
 | --- | --- |
 | `Series` | Series Float64 `taxa_interpolada` na mesma ordem de |
-| `Series` | `dus_alvo`. `null` quando o DU é nulo, a data alvo não existe |
-| `Series` | na curva, ou o DU está acima do maior vértice e `extrapolar` é |
-| `Series` | False. |
+| `Series` | `dus_alvo`. `null` quando o DU é nulo ou negativo, a data alvo |
+| `Series` | não existe na curva, ou o DU está acima do maior vértice e |
+| `Series` | `extrapolar` é False. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Se apenas uma de `datas_alvo` ou `datas_curva` for fornecida, ou se a curva tiver o mesmo prazo com taxas diferentes (na mesma data, quando há várias curvas). |
+| `ValueError` | Se `metodo` não for `"flat_forward"` nem `"linear"`, ou se uma curva tiver o mesmo prazo com taxas diferentes na mesma data. |
+| `TypeError` | Se `dus_alvo` ou `dus_curva` não for de tipo inteiro. |
 
 **Notes**
 
-Usa a mesma fórmula flat-forward descrita na documentação de `Interpolador`. Os vértices que cercam cada prazo alvo são encontrados automaticamente.
+Usa as mesmas fórmulas descritas na documentação de `Interpolador`. Os vértices que cercam cada prazo alvo são encontrados automaticamente.
+
+A função existe para o processamento em lote: interpolar de uma vez os pontos de muitas datas de referência, como no reprocessamento de uma base histórica inteira, em que criar um `Interpolador` por data seria muito mais lento. Para uma única curva, `Interpolador` é o caminho indicado e permite reutilizar a curva em várias consultas.
 
 Examples:
 
@@ -196,11 +248,12 @@ Caso típico: adicionar uma coluna de taxas interpoladas a um DataFrame com múl
 ... )
 >>> df.with_columns(
 ...     taxa=yd.interpolar(
+...         datas_alvo=df["data_referencia"],
 ...         dus_alvo=df["dias_uteis"],
+...         datas_curva=df_curva["data_referencia"],
 ...         dus_curva=df_curva["dias_uteis"],
 ...         taxas_curva=df_curva["taxa"],
-...         datas_alvo=df["data_referencia"],
-...         datas_curva=df_curva["data_referencia"],
+...         metodo="flat_forward",
 ...     )
 ... )
 shape: (2, 3)
@@ -212,20 +265,4 @@ shape: (2, 3)
 │ 2025-01-02      ┆ 10         ┆ 0.113293 │
 │ 2025-01-02      ┆ 25         ┆ 0.123323 │
 └─────────────────┴────────────┴──────────┘
-```
-
-Curva única (sem datas):
-
-```pycon
->>> yd.interpolar(
-...     dus_alvo=pl.Series([10, 25]),
-...     dus_curva=pl.Series([5, 20, 50]),
-...     taxas_curva=pl.Series([0.10, 0.12, 0.13]),
-... )
-shape: (2,)
-Series: 'taxa_interpolada' [f64]
-[
-    0.113293
-    0.123323
-]
 ```

@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -463,6 +463,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.66.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.66.0
 
     
   </span>
@@ -2152,42 +2179,48 @@ demais títulos para fórmulas, convenções e colunas retornadas.</p>
 <h2 id="interpolacao-de-taxas">Interpolação de taxas</h2>
 <p><code>Interpolador</code> usa a convenção de 252 dias úteis por ano e oferece os métodos
 <code>flat_forward</code> e <code>linear</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">interp</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">flat_forward</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="p">[</span><span class="mf">0.045</span><span class="p">,</span> <span class="mf">0.050</span><span class="p">,</span> <span class="mf">0.055</span><span class="p">],</span>
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">metodo</span><span class="o">=</span><span class="s2">"flat_forward"</span><span class="p">,</span>
 </span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="p">)</span>
 </span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">interp</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">flat_forward</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
 </span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="c1"># 0.04833...</span>
 </span></code></pre></div>
+<p>Para vários prazos de uma vez, passe uma sequência; os prazos sem taxa
+(negativos ou além do último vértice, sem extrapolação) ficam nulos:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">flat_forward</span><span class="p">([</span><span class="mi">15</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">100</span><span class="p">])</span>
+</span></code></pre></div>
+<p>A chamada direta é o atalho do método <code>interpolar</code>:
+<code>flat_forward.interpolar(45)</code> devolve o mesmo resultado.</p>
 <p>Para usar o interpolador em um pipeline Polars, aplique
 <code>interpolar_expr</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"dias_uteis"</span><span class="p">:</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">75</span><span class="p">]})</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">taxa</span><span class="o">=</span><span class="n">interp</span><span class="o">.</span><span class="n">interpolar_expr</span><span class="p">(</span><span class="s2">"dias_uteis"</span><span class="p">),</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"dias_uteis"</span><span class="p">:</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">45</span><span class="p">,</span> <span class="mi">75</span><span class="p">]})</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="n">taxa</span><span class="o">=</span><span class="n">flat_forward</span><span class="o">.</span><span class="n">interpolar_expr</span><span class="p">(</span><span class="s2">"dias_uteis"</span><span class="p">),</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">)</span>
 </span></code></pre></div>
-<p>Quando os pontos-alvo e a curva estão em estruturas diferentes, use
+<p>Quando cada ponto-alvo usa a curva da sua própria data de referência, use
 <code>yd.interpolar</code>. Para calcular uma taxa a termo, use <code>yd.forward</code> ou
 <code>yd.forwards</code>.</p>
 <h2 id="indicadores-auxiliares">Indicadores auxiliares</h2>
 <p>Indicadores do BCB, da PTAX e do IPCA ficam disponíveis em namespaces próprios:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">yd</span><span class="o">.</span><span class="n">selic</span><span class="o">.</span><span class="n">over</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">)</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">yd</span><span class="o">.</span><span class="n">selic</span><span class="o">.</span><span class="n">meta</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">)</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">yd</span><span class="o">.</span><span class="n">ptax</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">)</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa_serie</span><span class="p">(</span><span class="s2">"01-01-2024"</span><span class="p">,</span> <span class="s2">"01-03-2024"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">yd</span><span class="o">.</span><span class="n">selic</span><span class="o">.</span><span class="n">over</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">)</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">yd</span><span class="o">.</span><span class="n">selic</span><span class="o">.</span><span class="n">meta</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">)</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">yd</span><span class="o">.</span><span class="n">ptax</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">)</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa_serie</span><span class="p">(</span><span class="s2">"01-01-2024"</span><span class="p">,</span> <span class="s2">"01-03-2024"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Os indicadores de inflação, Selic, DI Over e PTAX retornam <code>Decimal</code> nas
 consultas escalares e colunas Polars <code>Decimal</code> nas séries. Para cálculos exatos,
 use constantes criadas a partir de texto:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">taxa</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa</span><span class="p">(</span><span class="s2">"01-01-2024"</span><span class="p">)</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">taxa</span><span class="o">.</span><span class="n">is_nan</span><span class="p">():</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">fator</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"1"</span><span class="p">)</span> <span class="o">+</span> <span class="n">taxa</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">taxa</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ipca</span><span class="o">.</span><span class="n">taxa</span><span class="p">(</span><span class="s2">"01-01-2024"</span><span class="p">)</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">taxa</span><span class="o">.</span><span class="n">is_nan</span><span class="p">():</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    <span class="n">fator</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"1"</span><span class="p">)</span> <span class="o">+</span> <span class="n">taxa</span>
 </span></code></pre></div>
 <p>Os <a href="../vna/">VNAs</a> também usam <code>Decimal</code>. As taxas históricas e projetadas do
 IPCA e IGP-M são expressas em unidade decimal. As entradas de inflação em
@@ -2195,10 +2228,10 @@ IPCA e IGP-M são expressas em unidade decimal. As entradas de inflação em
 percentuais explícitos (<code>"0.45%"</code> ou <code>"0,45%"</code>), convertidos para <code>Decimal</code>. Consulte as
 <a href="../release-0.60.0/">notas da 0.60.0</a> para os tipos e a migração da API.</p>
 <p>Para análises que precisam de ponto flutuante, converta explicitamente:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">taxa_float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">yd</span><span class="o">.</span><span class="n">selic</span><span class="o">.</span><span class="n">over</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">))</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">serie_float</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ptax_serie</span><span class="p">(</span><span class="n">ultimos</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">cotacao</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"cotacao"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">)</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">taxa_float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">yd</span><span class="o">.</span><span class="n">selic</span><span class="o">.</span><span class="n">over</span><span class="p">(</span><span class="s2">"31-05-2024"</span><span class="p">))</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">serie_float</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">ptax_serie</span><span class="p">(</span><span class="n">ultimos</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">cotacao</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"cotacao"</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">)</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="p">)</span>
 </span></code></pre></div>
 <p>A conversão pode introduzir aproximação binária. Veja as
 <a href="../release-0.62.0/">notas da 0.62.0</a> para a migração dos indicadores SGS e as
@@ -2211,11 +2244,11 @@ tornam-se <code>null</code> para preservar o pipeline Polars.</p>
 <p>Consultas válidas sem dados — por exemplo, para uma data futura, feriado ou fim
 de semana — retornam um DataFrame vazio, <code>nan</code> ou <code>Decimal("NaN")</code>, conforme
 o contrato da função:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">yd</span><span class="o">.</span><span class="n">futuro</span><span class="o">.</span><span class="n">historico</span><span class="p">(</span><span class="s2">"01-01-2030"</span><span class="p">,</span> <span class="s2">"DI1"</span><span class="p">)</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="c1"># True</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">ptax</span><span class="p">(</span><span class="s2">"25-12-2025"</span><span class="p">)</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="c1"># Decimal('NaN')</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">yd</span><span class="o">.</span><span class="n">futuro</span><span class="o">.</span><span class="n">historico</span><span class="p">(</span><span class="s2">"01-01-2030"</span><span class="p">,</span> <span class="s2">"DI1"</span><span class="p">)</span><span class="o">.</span><span class="n">is_empty</span><span class="p">()</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="c1"># True</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">yd</span><span class="o">.</span><span class="n">ptax</span><span class="p">(</span><span class="s2">"25-12-2025"</span><span class="p">)</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># Decimal('NaN')</span>
 </span></code></pre></div>
 <p>Para detalhes de parâmetros, colunas e convenções financeiras, continue pelo
 <a href="../api-map/">mapa da API</a> ou pela página do módulo desejado.</p>

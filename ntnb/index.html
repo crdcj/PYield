@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -339,6 +339,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.66.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.66.0
 
     
   </span>
@@ -4648,7 +4675,7 @@ Estas são TIRs e as taxas zero são calculadas a partir delas.</p>
 <span class="normal"><a href="#pyield.ntnb.implicitas--source--__codelineno-0-565">565</a></span>
 <span class="normal"><a href="#pyield.ntnb.implicitas--source--__codelineno-0-566">566</a></span>
 <span class="normal"><a href="#pyield.ntnb.implicitas--source--__codelineno-0-567">567</a></span>
-<span class="normal"><a href="#pyield.ntnb.implicitas--source--__codelineno-0-568">568</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnb.implicitas--source--__span-0-414"><a id="pyield.ntnb.implicitas--source--__codelineno-0-414" name="pyield.ntnb.implicitas--source--__codelineno-0-414"></a><span class="k">def</span><span class="w"> </span><span class="nf">implicitas</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913</span>
+<span class="normal"><a href="#pyield.ntnb.implicitas--source--__codelineno-0-568">568</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnb.implicitas--source--__span-0-414"><a id="pyield.ntnb.implicitas--source--__codelineno-0-414" name="pyield.ntnb.implicitas--source--__codelineno-0-414"></a><span class="k">def</span><span class="w"> </span><span class="nf">implicitas</span><span class="p">(</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-415"><a id="pyield.ntnb.implicitas--source--__codelineno-0-415" name="pyield.ntnb.implicitas--source--__codelineno-0-415"></a>    <span class="n">data_liquidacao</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-416"><a id="pyield.ntnb.implicitas--source--__codelineno-0-416" name="pyield.ntnb.implicitas--source--__codelineno-0-416"></a>    <span class="n">vencimentos_tir</span><span class="p">:</span> <span class="n">DatesLike</span><span class="p">,</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-417"><a id="pyield.ntnb.implicitas--source--__codelineno-0-417" name="pyield.ntnb.implicitas--source--__codelineno-0-417"></a>    <span class="n">taxas_tir</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
@@ -4788,13 +4815,13 @@ Estas são TIRs e as taxas zero são calculadas a partir delas.</p>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-551"><a id="pyield.ntnb.implicitas--source--__codelineno-0-551" name="pyield.ntnb.implicitas--source--__codelineno-0-551"></a>                <span class="s2">"inflacao_implicita"</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">Float64</span><span class="p">,</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-552"><a id="pyield.ntnb.implicitas--source--__codelineno-0-552" name="pyield.ntnb.implicitas--source--__codelineno-0-552"></a>            <span class="p">}</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-553"><a id="pyield.ntnb.implicitas--source--__codelineno-0-553" name="pyield.ntnb.implicitas--source--__codelineno-0-553"></a>        <span class="p">)</span>
-</span><span id="pyield.ntnb.implicitas--source--__span-0-554"><a id="pyield.ntnb.implicitas--source--__codelineno-0-554" name="pyield.ntnb.implicitas--source--__codelineno-0-554"></a>    <span class="n">interpolador_ff</span> <span class="o">=</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
+</span><span id="pyield.ntnb.implicitas--source--__span-0-554"><a id="pyield.ntnb.implicitas--source--__codelineno-0-554" name="pyield.ntnb.implicitas--source--__codelineno-0-554"></a>    <span class="n">flat_forward</span> <span class="o">=</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-555"><a id="pyield.ntnb.implicitas--source--__codelineno-0-555" name="pyield.ntnb.implicitas--source--__codelineno-0-555"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">vencimentos_nominais</span><span class="p">),</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-556"><a id="pyield.ntnb.implicitas--source--__codelineno-0-556" name="pyield.ntnb.implicitas--source--__codelineno-0-556"></a>        <span class="n">taxas</span><span class="o">=</span><span class="n">taxas_nominais</span><span class="p">,</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-557"><a id="pyield.ntnb.implicitas--source--__codelineno-0-557" name="pyield.ntnb.implicitas--source--__codelineno-0-557"></a>        <span class="n">metodo</span><span class="o">=</span><span class="s2">"flat_forward"</span><span class="p">,</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-558"><a id="pyield.ntnb.implicitas--source--__codelineno-0-558" name="pyield.ntnb.implicitas--source--__codelineno-0-558"></a>        <span class="n">extrapolar</span><span class="o">=</span><span class="n">extrapolar</span><span class="p">,</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-559"><a id="pyield.ntnb.implicitas--source--__codelineno-0-559" name="pyield.ntnb.implicitas--source--__codelineno-0-559"></a>    <span class="p">)</span>
-</span><span id="pyield.ntnb.implicitas--source--__span-0-560"><a id="pyield.ntnb.implicitas--source--__codelineno-0-560" name="pyield.ntnb.implicitas--source--__codelineno-0-560"></a>    <span class="n">taxa_nominal_expr</span> <span class="o">=</span> <span class="n">interpolador_ff</span><span class="o">.</span><span class="n">interpolar_expr</span><span class="p">(</span><span class="s2">"dias_uteis"</span><span class="p">)</span>
+</span><span id="pyield.ntnb.implicitas--source--__span-0-560"><a id="pyield.ntnb.implicitas--source--__codelineno-0-560" name="pyield.ntnb.implicitas--source--__codelineno-0-560"></a>    <span class="n">taxa_nominal_expr</span> <span class="o">=</span> <span class="n">flat_forward</span><span class="o">.</span><span class="n">interpolar_expr</span><span class="p">(</span><span class="s2">"dias_uteis"</span><span class="p">)</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-561"><a id="pyield.ntnb.implicitas--source--__codelineno-0-561" name="pyield.ntnb.implicitas--source--__codelineno-0-561"></a>    <span class="k">return</span> <span class="n">taxas_zero</span><span class="p">(</span><span class="n">data_liquidacao</span><span class="p">,</span> <span class="n">vencimentos_tir</span><span class="p">,</span> <span class="n">taxas_tir</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-562"><a id="pyield.ntnb.implicitas--source--__codelineno-0-562" name="pyield.ntnb.implicitas--source--__codelineno-0-562"></a>        <span class="s2">"data_vencimento"</span><span class="p">,</span>
 </span><span id="pyield.ntnb.implicitas--source--__span-0-563"><a id="pyield.ntnb.implicitas--source--__codelineno-0-563" name="pyield.ntnb.implicitas--source--__codelineno-0-563"></a>        <span class="s2">"dias_uteis"</span><span class="p">,</span>
@@ -5660,7 +5687,7 @@ forwards constantes por trecho usada no bootstrap:</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">... </span>    <span class="n">vencimentos</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">"data_vencimento"</span><span class="p">],</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="gp">... </span>    <span class="n">taxas</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">"taxa_indicativa"</span><span class="p">],</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="gp">... </span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">interpolar</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">flat_forward</span> <span class="o">=</span> <span class="n">yd</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gp">... </span>    <span class="n">curva_decimal</span><span class="p">[</span><span class="s2">"dias_uteis"</span><span class="p">],</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gp">... </span>    <span class="n">curva_decimal</span><span class="p">[</span><span class="s2">"taxa_zero"</span><span class="p">],</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="gp">... </span>    <span class="n">metodo</span><span class="o">=</span><span class="s2">"flat_forward"</span><span class="p">,</span>
@@ -5668,7 +5695,7 @@ forwards constantes por trecho usada no bootstrap:</p>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">du_intermediario</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="gp">... </span>    <span class="n">curva_decimal</span><span class="p">[</span><span class="s2">"dias_uteis"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">curva_decimal</span><span class="p">[</span><span class="s2">"dias_uteis"</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="gp">... </span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="gp">&gt;&gt;&gt; </span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">interpolar</span><span class="p">(</span><span class="n">du_intermediario</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="gp">&gt;&gt;&gt; </span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">flat_forward</span><span class="p">(</span><span class="n">du_intermediario</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="go">True</span>
 </span></code></pre></div>
 
@@ -6137,7 +6164,7 @@ forwards constantes por trecho usada no bootstrap:</p>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-343"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-343" name="pyield.ntnb.taxas_zero--source--__codelineno-0-343"></a><span class="sd">        ...     vencimentos=df["data_vencimento"],</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-344"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-344" name="pyield.ntnb.taxas_zero--source--__codelineno-0-344"></a><span class="sd">        ...     taxas=df["taxa_indicativa"],</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-345"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-345" name="pyield.ntnb.taxas_zero--source--__codelineno-0-345"></a><span class="sd">        ... )</span>
-</span><span id="pyield.ntnb.taxas_zero--source--__span-0-346"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-346" name="pyield.ntnb.taxas_zero--source--__codelineno-0-346"></a><span class="sd">        &gt;&gt;&gt; interpolar = yd.Interpolador(</span>
+</span><span id="pyield.ntnb.taxas_zero--source--__span-0-346"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-346" name="pyield.ntnb.taxas_zero--source--__codelineno-0-346"></a><span class="sd">        &gt;&gt;&gt; flat_forward = yd.Interpolador(</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-347"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-347" name="pyield.ntnb.taxas_zero--source--__codelineno-0-347"></a><span class="sd">        ...     curva_decimal["dias_uteis"],</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-348"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-348" name="pyield.ntnb.taxas_zero--source--__codelineno-0-348"></a><span class="sd">        ...     curva_decimal["taxa_zero"],</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-349"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-349" name="pyield.ntnb.taxas_zero--source--__codelineno-0-349"></a><span class="sd">        ...     metodo="flat_forward",</span>
@@ -6145,7 +6172,7 @@ forwards constantes por trecho usada no bootstrap:</p>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-351"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-351" name="pyield.ntnb.taxas_zero--source--__codelineno-0-351"></a><span class="sd">        &gt;&gt;&gt; du_intermediario = (</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-352"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-352" name="pyield.ntnb.taxas_zero--source--__codelineno-0-352"></a><span class="sd">        ...     curva_decimal["dias_uteis"][0] + curva_decimal["dias_uteis"][1]</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-353"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-353" name="pyield.ntnb.taxas_zero--source--__codelineno-0-353"></a><span class="sd">        ... ) // 2</span>
-</span><span id="pyield.ntnb.taxas_zero--source--__span-0-354"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-354" name="pyield.ntnb.taxas_zero--source--__codelineno-0-354"></a><span class="sd">        &gt;&gt;&gt; 0 &lt; interpolar(du_intermediario) &lt; 1</span>
+</span><span id="pyield.ntnb.taxas_zero--source--__span-0-354"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-354" name="pyield.ntnb.taxas_zero--source--__codelineno-0-354"></a><span class="sd">        &gt;&gt;&gt; 0 &lt; flat_forward(du_intermediario) &lt; 1</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-355"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-355" name="pyield.ntnb.taxas_zero--source--__codelineno-0-355"></a><span class="sd">        True</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-356"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-356" name="pyield.ntnb.taxas_zero--source--__codelineno-0-356"></a><span class="sd">    """</span>
 </span><span id="pyield.ntnb.taxas_zero--source--__span-0-357"><a id="pyield.ntnb.taxas_zero--source--__codelineno-0-357" name="pyield.ntnb.taxas_zero--source--__codelineno-0-357"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">pyield.tpf.titulos.ntnb</span><span class="w"> </span><span class="kn">import</span> <span class="n">fluxos_caixa</span>  <span class="c1"># noqa: PLC0415</span>

@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -339,6 +339,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.66.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.66.0
 
     
   </span>
@@ -6465,7 +6492,7 @@ não aparecem no resultado.</p>
 <span class="normal"><a href="#pyield.ntnf.taxas_zero--source--__codelineno-0-582">582</a></span>
 <span class="normal"><a href="#pyield.ntnf.taxas_zero--source--__codelineno-0-583">583</a></span>
 <span class="normal"><a href="#pyield.ntnf.taxas_zero--source--__codelineno-0-584">584</a></span>
-<span class="normal"><a href="#pyield.ntnf.taxas_zero--source--__codelineno-0-585">585</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnf.taxas_zero--source--__span-0-389"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-389" name="pyield.ntnf.taxas_zero--source--__codelineno-0-389"></a><span class="k">def</span><span class="w"> </span><span class="nf">taxas_zero</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913, PLR0914, PLR0917</span>
+<span class="normal"><a href="#pyield.ntnf.taxas_zero--source--__codelineno-0-585">585</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnf.taxas_zero--source--__span-0-389"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-389" name="pyield.ntnf.taxas_zero--source--__codelineno-0-389"></a><span class="k">def</span><span class="w"> </span><span class="nf">taxas_zero</span><span class="p">(</span>  <span class="c1"># noqa: PLR0914, PLR0917</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-390"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-390" name="pyield.ntnf.taxas_zero--source--__codelineno-0-390"></a>    <span class="n">data_liquidacao</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-391"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-391" name="pyield.ntnf.taxas_zero--source--__codelineno-0-391"></a>    <span class="n">vencimentos_ltn</span><span class="p">:</span> <span class="n">DatesLike</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-392"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-392" name="pyield.ntnf.taxas_zero--source--__codelineno-0-392"></a>    <span class="n">taxas_ltn</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
@@ -6598,12 +6625,12 @@ não aparecem no resultado.</p>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-519"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-519" name="pyield.ntnf.taxas_zero--source--__codelineno-0-519"></a>        <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">schema</span><span class="o">=</span><span class="n">_SCHEMA_TAXAS_ZERO</span><span class="p">)</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-520"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-520" name="pyield.ntnf.taxas_zero--source--__codelineno-0-520"></a>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-521"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-521" name="pyield.ntnf.taxas_zero--source--__codelineno-0-521"></a>    <span class="c1"># 2. Criar interpoladores (aceitam pl.Series diretamente)</span>
-</span><span id="pyield.ntnf.taxas_zero--source--__span-0-522"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-522" name="pyield.ntnf.taxas_zero--source--__codelineno-0-522"></a>    <span class="n">interpolador_ltn</span> <span class="o">=</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
+</span><span id="pyield.ntnf.taxas_zero--source--__span-0-522"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-522" name="pyield.ntnf.taxas_zero--source--__codelineno-0-522"></a>    <span class="n">flat_forward_ltn</span> <span class="o">=</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-523"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-523" name="pyield.ntnf.taxas_zero--source--__codelineno-0-523"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">liquidacao</span><span class="p">,</span> <span class="n">vencimentos_ltn</span><span class="p">),</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-524"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-524" name="pyield.ntnf.taxas_zero--source--__codelineno-0-524"></a>        <span class="n">taxas</span><span class="o">=</span><span class="n">taxas_ltn</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-525"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-525" name="pyield.ntnf.taxas_zero--source--__codelineno-0-525"></a>        <span class="n">metodo</span><span class="o">=</span><span class="s2">"flat_forward"</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-526"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-526" name="pyield.ntnf.taxas_zero--source--__codelineno-0-526"></a>    <span class="p">)</span>
-</span><span id="pyield.ntnf.taxas_zero--source--__span-0-527"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-527" name="pyield.ntnf.taxas_zero--source--__codelineno-0-527"></a>    <span class="n">interpolador_ntnf</span> <span class="o">=</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
+</span><span id="pyield.ntnf.taxas_zero--source--__span-0-527"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-527" name="pyield.ntnf.taxas_zero--source--__codelineno-0-527"></a>    <span class="n">flat_forward_ntnf</span> <span class="o">=</span> <span class="n">interpolador</span><span class="o">.</span><span class="n">Interpolador</span><span class="p">(</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-528"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-528" name="pyield.ntnf.taxas_zero--source--__codelineno-0-528"></a>        <span class="n">dias_uteis</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">liquidacao</span><span class="p">,</span> <span class="n">vencimentos_ntnf</span><span class="p">),</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-529"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-529" name="pyield.ntnf.taxas_zero--source--__codelineno-0-529"></a>        <span class="n">taxas</span><span class="o">=</span><span class="n">taxas_ntnf</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-530"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-530" name="pyield.ntnf.taxas_zero--source--__codelineno-0-530"></a>        <span class="n">metodo</span><span class="o">=</span><span class="s2">"flat_forward"</span><span class="p">,</span>
@@ -6620,7 +6647,7 @@ não aparecem no resultado.</p>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-541"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-541" name="pyield.ntnf.taxas_zero--source--__codelineno-0-541"></a>        <span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">dias_uteis</span><span class="o">=</span><span class="n">du</span><span class="o">.</span><span class="n">contar_expr</span><span class="p">(</span><span class="n">liquidacao</span><span class="p">,</span> <span class="s2">"data_vencimento"</span><span class="p">))</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-542"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-542" name="pyield.ntnf.taxas_zero--source--__codelineno-0-542"></a>        <span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-543"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-543" name="pyield.ntnf.taxas_zero--source--__codelineno-0-543"></a>            <span class="n">anos_uteis</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">"dias_uteis"</span><span class="p">)</span> <span class="o">/</span> <span class="mi">252</span><span class="p">,</span>
-</span><span id="pyield.ntnf.taxas_zero--source--__span-0-544"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-544" name="pyield.ntnf.taxas_zero--source--__codelineno-0-544"></a>            <span class="n">taxa_tir</span><span class="o">=</span><span class="n">interpolador_ntnf</span><span class="o">.</span><span class="n">interpolar_expr</span><span class="p">(</span><span class="s2">"dias_uteis"</span><span class="p">),</span>
+</span><span id="pyield.ntnf.taxas_zero--source--__span-0-544"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-544" name="pyield.ntnf.taxas_zero--source--__codelineno-0-544"></a>            <span class="n">taxa_tir</span><span class="o">=</span><span class="n">flat_forward_ntnf</span><span class="o">.</span><span class="n">interpolar_expr</span><span class="p">(</span><span class="s2">"dias_uteis"</span><span class="p">),</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-545"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-545" name="pyield.ntnf.taxas_zero--source--__codelineno-0-545"></a>        <span class="p">)</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-546"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-546" name="pyield.ntnf.taxas_zero--source--__codelineno-0-546"></a>    <span class="p">)</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-547"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-547" name="pyield.ntnf.taxas_zero--source--__codelineno-0-547"></a>
@@ -6635,7 +6662,7 @@ não aparecem no resultado.</p>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-556"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-556" name="pyield.ntnf.taxas_zero--source--__codelineno-0-556"></a>    <span class="k">for</span> <span class="n">data_vertice</span><span class="p">,</span> <span class="n">dias_uteis</span><span class="p">,</span> <span class="n">anos_uteis</span><span class="p">,</span> <span class="n">tir</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iter_rows</span><span class="p">():</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-557"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-557" name="pyield.ntnf.taxas_zero--source--__codelineno-0-557"></a>        <span class="c1"># Até o último vencimento LTN (inclusive), a taxa zero vem das LTNs</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-558"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-558" name="pyield.ntnf.taxas_zero--source--__codelineno-0-558"></a>        <span class="k">if</span> <span class="n">data_vertice</span> <span class="o">&lt;=</span> <span class="n">ultimo_vencimento_ltn</span><span class="p">:</span>
-</span><span id="pyield.ntnf.taxas_zero--source--__span-0-559"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-559" name="pyield.ntnf.taxas_zero--source--__codelineno-0-559"></a>            <span class="n">taxas_zero_por_data</span><span class="p">[</span><span class="n">data_vertice</span><span class="p">]</span> <span class="o">=</span> <span class="n">interpolador_ltn</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">)</span>
+</span><span id="pyield.ntnf.taxas_zero--source--__span-0-559"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-559" name="pyield.ntnf.taxas_zero--source--__codelineno-0-559"></a>            <span class="n">taxas_zero_por_data</span><span class="p">[</span><span class="n">data_vertice</span><span class="p">]</span> <span class="o">=</span> <span class="n">flat_forward_ltn</span><span class="p">(</span><span class="n">dias_uteis</span><span class="p">)</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-560"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-560" name="pyield.ntnf.taxas_zero--source--__codelineno-0-560"></a>            <span class="k">continue</span>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-561"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-561" name="pyield.ntnf.taxas_zero--source--__codelineno-0-561"></a>
 </span><span id="pyield.ntnf.taxas_zero--source--__span-0-562"><a id="pyield.ntnf.taxas_zero--source--__codelineno-0-562" name="pyield.ntnf.taxas_zero--source--__codelineno-0-562"></a>        <span class="c1"># Cupons anteriores ao pagamento final, com taxas zero já resolvidas.</span>
@@ -6991,7 +7018,7 @@ de <code>ntnf.fluxos_caixa</code>. Vencimentos até a liquidação são ignorado
 <span class="normal"><a href="#pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-198">198</a></span>
 <span class="normal"><a href="#pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-199">199</a></span>
 <span class="normal"><a href="#pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-200">200</a></span>
-<span class="normal"><a href="#pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-201">201</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-95"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-95" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-95"></a><span class="k">def</span><span class="w"> </span><span class="nf">taxas_zero_forwards</span><span class="p">(</span>  <span class="c1"># noqa: PLR0913, PLR0917</span>
+<span class="normal"><a href="#pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-201">201</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-95"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-95" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-95"></a><span class="k">def</span><span class="w"> </span><span class="nf">taxas_zero_forwards</span><span class="p">(</span>  <span class="c1"># noqa: PLR0917</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-96"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-96" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-96"></a>    <span class="n">data_liquidacao</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-97"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-97" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-97"></a>    <span class="n">vencimentos_ltn</span><span class="p">:</span> <span class="n">DatesLike</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-98"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-98" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-98"></a>    <span class="n">taxas_ltn</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
@@ -7089,12 +7116,12 @@ de <code>ntnf.fluxos_caixa</code>. Vencimentos até a liquidação são ignorado
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-190"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-190" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-190"></a>        <span class="k">return</span> <span class="n">curva</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-191"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-191" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-191"></a>    <span class="n">datas_saida</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span> <span class="o">|</span> <span class="n">cupons</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">Date</span><span class="p">)</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-192"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-192" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-192"></a>    <span class="n">dias_saida</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">contar</span><span class="p">(</span><span class="n">liquidacao</span><span class="p">,</span> <span class="n">datas_saida</span><span class="p">)</span>
-</span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-193"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-193" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-193"></a>    <span class="n">interpolar</span> <span class="o">=</span> <span class="n">Interpolador</span><span class="p">(</span><span class="n">dias</span><span class="p">,</span> <span class="n">taxas</span><span class="p">,</span> <span class="s2">"flat_forward"</span><span class="p">)</span>
+</span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-193"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-193" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-193"></a>    <span class="n">flat_forward</span> <span class="o">=</span> <span class="n">Interpolador</span><span class="p">(</span><span class="n">dias</span><span class="p">,</span> <span class="n">taxas</span><span class="p">,</span> <span class="s2">"flat_forward"</span><span class="p">)</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-194"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-194" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-194"></a>    <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-195"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-195" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-195"></a>        <span class="p">{</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-196"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-196" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-196"></a>            <span class="s2">"data_vencimento"</span><span class="p">:</span> <span class="n">datas_saida</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-197"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-197" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-197"></a>            <span class="s2">"dias_uteis"</span><span class="p">:</span> <span class="n">dias_saida</span><span class="p">,</span>
-</span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-198"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-198" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-198"></a>            <span class="s2">"taxa_zero"</span><span class="p">:</span> <span class="p">[</span><span class="n">interpolar</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">dias_saida</span><span class="p">],</span>
+</span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-198"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-198" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-198"></a>            <span class="s2">"taxa_zero"</span><span class="p">:</span> <span class="n">flat_forward</span><span class="p">(</span><span class="n">dias_saida</span><span class="p">),</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-199"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-199" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-199"></a>        <span class="p">},</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-200"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-200" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-200"></a>        <span class="n">schema</span><span class="o">=</span><span class="n">esquema</span><span class="p">,</span>
 </span><span id="pyield.ntnf.taxas_zero_forwards--source--__span-0-201"><a id="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-201" name="pyield.ntnf.taxas_zero_forwards--source--__codelineno-0-201"></a>    <span class="p">)</span>

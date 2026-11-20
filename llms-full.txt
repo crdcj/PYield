@@ -293,7 +293,7 @@ yd.forwards_expr(...)
 yd.Interpolador
 ```
 
-**`yd.interpolar` (interpolação direta de curvas)**
+**`yd.interpolar` (interpolação em lote, uma curva por data)**
 
 ```text
 yd.interpolar(...)
@@ -507,18 +507,20 @@ import polars as pl
 df = yd.futuro.historico("31-05-2024", "DI1")
 
 # Criar interpolador flat forward (padrão de mercado)
-interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward")
+flat_forward = yd.Interpolador(
+    df["dias_uteis"], df["taxa_ajuste"], metodo="flat_forward"
+)
 
 # Interpolar para 45 dias úteis
-interp(45)  # -> Taxa interpolada (ex: 0.1037)
+flat_forward(45)  # -> Taxa interpolada (ex: 0.1037)
 
 # Em um pipeline Polars
 df_alvos = pl.DataFrame({"du": [30, 60, 90]})
-df_alvos.with_columns(taxa=interp.interpolar_expr("du"))
+df_alvos.with_columns(taxa=flat_forward.interpolar_expr("du"))
 
 # Interpolação linear (alternativa)
-linear_interp = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="linear")
-linear_interp(45)  # -> Taxa interpolada linearmente
+linear = yd.Interpolador(df["dias_uteis"], df["taxa_ajuste"], metodo="linear")
+linear(45)  # -> Taxa interpolada linearmente
 ```
 
 ### 6\. Indicadores do Banco Central
@@ -1286,13 +1288,15 @@ A publicação é feita pelo workflow `.github/workflows/release.yml`, disparado
    uv version
    ```
 2. Escreva as notas em `docs/release-X.Y.Z.md` e atualize `docs/releases.md` e `mkdocs.yml`, conforme a seção anterior.
-3. Faça o commit, crie a tag e envie os dois:
+3. Faça o commit, crie a tag anotada e envie os dois:
 
    ```sh
    git commit -am "release: X.Y.Z"
-   git tag vX.Y.Z
+   git tag -a vX.Y.Z -m "PYield X.Y.Z"
    git push --follow-tags
    ```
+
+   O `--follow-tags` envia apenas tags anotadas. Uma tag leve (`git tag vX.Y.Z`) fica só no repositório local, e o workflow não é disparado; nesse caso, envie-a com `git push origin vX.Y.Z`.
 
 O workflow executa, em ordem:
 
@@ -1571,7 +1575,7 @@ Parameters:
 
 Returns:
 
-<table>       <thead>         <tr>           <th>Type</th>           <th>Description</th>         </tr>       </thead>       <tbody>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <p>Taxa de liquidação DI exata ou interpolada para a data e vencimento</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <p>especificados. Retorna <code>float(&quot;nan&quot;)</code> se:</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li><code>data_referencia</code> ou <code>data_vencimento</code> for nulo.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>Não há dados DI para a <code>data_referencia</code>.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O <code>data_vencimento</code> está fora do intervalo e <code>extrapolar</code> é False.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O cálculo de interpolação falhou.</li> </ul>               </div>             </td>           </tr>       </tbody>     </table>
+<table>       <thead>         <tr>           <th>Type</th>           <th>Description</th>         </tr>       </thead>       <tbody>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <p>Taxa de liquidação DI exata ou interpolada para a data e vencimento</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <p>especificados. Retorna <code>float(&quot;nan&quot;)</code> se:</p>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li><code>data_referencia</code> ou <code>data_vencimento</code> for nulo.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>Não há dados DI para a <code>data_referencia</code>.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O <code>data_vencimento</code> é anterior à <code>data_referencia</code>.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O <code>data_vencimento</code> está fora do intervalo e <code>extrapolar</code> é False.</li> </ul>               </div>             </td>           </tr>           <tr class="doc-section-item">             <td>                   <code><span title="float">float</span></code>             </td>             <td>               <div class="doc-md-description">                 <ul> <li>O cálculo de interpolação falhou.</li> </ul>               </div>             </td>           </tr>       </tbody>     </table>
 
 Examples:
 
@@ -1621,7 +1625,7 @@ Returns:
 | --- | --- |
 | `Series` | Series contendo as taxas DI interpoladas (como floats). Valores serão |
 | `Series` | nulos onde interpolação não for possível (ex: sem dados DI para a data |
-| `Series` | de negociação). As taxas são retornadas em formato decimal; os exemplos |
+| `Series` | de negociação ou vencimento anterior a ela). As taxas são retornadas em formato decimal; os exemplos |
 | `Series` | abaixo as multiplicam por 100 apenas para facilitar a leitura. |
 
 Raises:
@@ -3157,16 +3161,17 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `dias_uteis` | `ArrayLike` | Sequência de dias úteis (DU) conhecidos. | *required* |
+| `dias_uteis` | `ArrayLike` | Sequência de dias úteis (DU) conhecidos, de tipo inteiro. Vértices com DU negativo são ignorados, assim como os de DU nulo ou de taxa nula ou NaN. | *required* |
 | `taxas` | `ArrayLike` | Sequência de taxas de juros conhecidas. | *required* |
 | `metodo` | `Literal['flat_forward', 'linear']` | Método de interpolação a usar. Opções: "flat\_forward" ou "linear". | *required* |
-| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice conhecido). Se True, retorna a última taxa conhecida; se False (padrão), retorna NaN. A ponta curta (DU abaixo do menor vértice) sempre retorna a primeira taxa conhecida, independentemente desta flag. | `False` |
+| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice conhecido). Se True, retorna a última taxa conhecida; se False (padrão), retorna NaN. A ponta curta (DU abaixo do menor vértice, inclusive zero) sempre retorna a primeira taxa conhecida, independentemente desta flag. | `False` |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
 | `ValueError` | Se `metodo` não for `"flat_forward"` nem `"linear"`, se não houver ao menos um vértice válido na curva ou se a curva tiver o mesmo prazo com taxas diferentes. |
+| `TypeError` | Se `dias_uteis` não for de tipo inteiro. |
 
 **Notes**
 
@@ -3219,6 +3224,19 @@ nan
 nan
 ```
 
+Vários prazos de uma vez; os casos sem taxa ficam nulos:
+
+```pycon
+>>> flat_fwd([45, 100, -10])
+shape: (3,)
+Series: 'taxa_interpolada' [f64]
+[
+    0.048331
+    null
+    null
+]
+```
+
 Se extrapolação estiver habilitada, a última taxa conhecida é usada:
 
 ```pycon
@@ -3229,28 +3247,62 @@ Se extrapolação estiver habilitada, a última taxa conhecida é usada:
 
 ## `interpolar(du)`
 
-Interpola a taxa para um único dia útil.
+Interpola a taxa para um dia útil ou para uma sequência de dias úteis.
+
+A instância pode ser chamada diretamente: `flat_forward(du)` é o atalho de `flat_forward.interpolar(du)`.
 
 Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `du` | `int` | DU escalar inteiro para interpolação. | *required* |
+| `du` | `int \| ArrayLike` | DU inteiro ou sequência de DUs inteiros (lista, tupla ou `pl.Series`). | *required* |
 
 Returns:
 
 | Type | Description |
 | --- | --- |
-| `float` | Taxa interpolada como float. Retorna `float("nan")` quando o DU |
-| `float` | for negativo ou estiver acima do maior vértice conhecido com |
-| `float` | `extrapolar=False`. DU abaixo do menor vértice sempre retorna |
-| `float` | a primeira taxa conhecida. |
+| `float \| Series` | Para DU escalar, a taxa interpolada como float; `float("nan")` |
+| `float \| Series` | quando o DU for negativo ou estiver acima do maior vértice |
+| `float \| Series` | conhecido com `extrapolar=False`. Para uma sequência, Series |
+| `float \| Series` | Float64 `taxa_interpolada` na mesma ordem da entrada, com |
+| `float \| Series` | `null` nesses mesmos casos e quando o DU for nulo. DU abaixo |
+| `float \| Series` | do menor vértice, inclusive zero, sempre retorna a primeira taxa |
+| `float \| Series` | conhecida. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
-| `TypeError` | Se `du` não for um inteiro. |
+| `TypeError` | Se `du` não for um inteiro nem uma sequência de tipo inteiro. Float é rejeitado, mesmo com valor inteiro. |
+
+Examples:
+
+```pycon
+>>> from pyield import Interpolador
+>>> flat_forward = Interpolador(
+...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"
+... )
+>>> flat_forward.interpolar(45)
+0.04833068080970859
+```
+
+A chamada direta da instância dá o mesmo resultado:
+
+```pycon
+>>> flat_forward(45)
+0.04833068080970859
+```
+
+```pycon
+>>> flat_forward([15, 45, 100])
+shape: (3,)
+Series: 'taxa_interpolada' [f64]
+[
+    0.045
+    0.048331
+    null
+]
+```
 
 ## `interpolar_expr(du)`
 
@@ -3262,7 +3314,7 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `du` | `str \| Expr` | Nome de coluna ou expressão Polars com os DUs alvo. A coluna deve ser inteira (será convertida para Int64 internamente). | *required* |
+| `du` | `str \| Expr` | Nome de coluna ou expressão Polars com os DUs alvo. A coluna deve ser de tipo inteiro; outro tipo gera `TypeError` na execução da expressão. | *required* |
 
 Returns:
 
@@ -3274,11 +3326,11 @@ Examples:
 
 ```pycon
 >>> from pyield import Interpolador
->>> interp = Interpolador(
+>>> flat_forward = Interpolador(
 ...     [30, 60, 90], [0.045, 0.05, 0.055], "flat_forward"
 ... )
 >>> df = pl.DataFrame({"du": [15, 45, 75]})
->>> df.with_columns(taxa=interp.interpolar_expr("du"))
+>>> df.with_columns(taxa=flat_forward.interpolar_expr("du"))
 shape: (3, 2)
 ┌─────┬──────────┐
 │ du  ┆ taxa     │
@@ -3293,9 +3345,9 @@ shape: (3, 2)
 
 ## interpolar
 
-Interpola taxas flat-forward para uma série de pontos alvo.
+Interpola taxas em lote, com uma curva por data de referência.
 
-Versão vetorizada de `Interpolador`. Quando `datas_alvo` e `datas_curva` são fornecidas, cada ponto é interpolado contra a curva da sua data correspondente (multi-curva, sem loop em Python). Quando ambas são `None`, todos os pontos usam a mesma curva.
+Cada ponto alvo é interpolado contra a curva da sua data de referência (multi-curva, sem loop em Python). Todos os parâmetros são nomeados.
 
 O resultado pode ser adicionado a um DataFrame via `with_columns`, preservando a ordem original de `dus_alvo`.
 
@@ -3303,31 +3355,35 @@ Parameters:
 
 | Name | Type | Description | Default |
 | --- | --- | --- | --- |
-| `dus_alvo` | `Series` | Series Int com os dias úteis dos pontos a interpolar. | *required* |
-| `dus_curva` | `Series` | Series Int com os dias úteis dos vértices conhecidos. | *required* |
+| `datas_alvo` | `Series` | Series Date com a data de referência de cada ponto alvo. | *required* |
+| `dus_alvo` | `Series` | Series Int com os dias úteis dos pontos a interpolar (mesma ordem de `datas_alvo`). | *required* |
+| `datas_curva` | `Series` | Series Date com a data de referência de cada vértice da curva. | *required* |
+| `dus_curva` | `Series` | Series Int com os dias úteis dos vértices conhecidos (mesma ordem de `datas_curva`). Vértices com DU negativo são ignorados, assim como os de DU nulo ou de taxa nula ou NaN. | *required* |
 | `taxas_curva` | `Series` | Series Float com as taxas dos vértices conhecidos (mesma ordem de `dus_curva`). | *required* |
-| `datas_alvo` | `Series \| None` | Series Date com a data de referência de cada ponto alvo. Quando fornecida, `datas_curva` também deve ser. Padrão: `None` (curva única). | `None` |
-| `datas_curva` | `Series \| None` | Series Date com a data de referência de cada vértice da curva. Padrão: `None` (curva única). | `None` |
-| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice de cada grupo). Se True, retorna a última taxa conhecida; se False (padrão), retorna `null`. A ponta curta (DU abaixo do menor vértice) sempre retorna a primeira taxa do grupo, independentemente desta flag. O default casa com o da classe `Interpolador`. | `False` |
+| `metodo` | `Literal['flat_forward', 'linear']` | Método de interpolação a usar. Opções: "flat\_forward" ou "linear". | *required* |
+| `extrapolar` | `bool` | Controla apenas o comportamento na ponta longa (DU acima do maior vértice de cada grupo). Se True, retorna a última taxa conhecida; se False (padrão), retorna `null`. A ponta curta (DU abaixo do menor vértice, inclusive zero) sempre retorna a primeira taxa do grupo, independentemente desta flag. O default casa com o da classe `Interpolador`. | `False` |
 
 Returns:
 
 | Type | Description |
 | --- | --- |
 | `Series` | Series Float64 `taxa_interpolada` na mesma ordem de |
-| `Series` | `dus_alvo`. `null` quando o DU é nulo, a data alvo não existe |
-| `Series` | na curva, ou o DU está acima do maior vértice e `extrapolar` é |
-| `Series` | False. |
+| `Series` | `dus_alvo`. `null` quando o DU é nulo ou negativo, a data alvo |
+| `Series` | não existe na curva, ou o DU está acima do maior vértice e |
+| `Series` | `extrapolar` é False. |
 
 Raises:
 
 | Type | Description |
 | --- | --- |
-| `ValueError` | Se apenas uma de `datas_alvo` ou `datas_curva` for fornecida, ou se a curva tiver o mesmo prazo com taxas diferentes (na mesma data, quando há várias curvas). |
+| `ValueError` | Se `metodo` não for `"flat_forward"` nem `"linear"`, ou se uma curva tiver o mesmo prazo com taxas diferentes na mesma data. |
+| `TypeError` | Se `dus_alvo` ou `dus_curva` não for de tipo inteiro. |
 
 **Notes**
 
-Usa a mesma fórmula flat-forward descrita na documentação de `Interpolador`. Os vértices que cercam cada prazo alvo são encontrados automaticamente.
+Usa as mesmas fórmulas descritas na documentação de `Interpolador`. Os vértices que cercam cada prazo alvo são encontrados automaticamente.
+
+A função existe para o processamento em lote: interpolar de uma vez os pontos de muitas datas de referência, como no reprocessamento de uma base histórica inteira, em que criar um `Interpolador` por data seria muito mais lento. Para uma única curva, `Interpolador` é o caminho indicado e permite reutilizar a curva em várias consultas.
 
 Examples:
 
@@ -3349,11 +3405,12 @@ Caso típico: adicionar uma coluna de taxas interpoladas a um DataFrame com múl
 ... )
 >>> df.with_columns(
 ...     taxa=yd.interpolar(
+...         datas_alvo=df["data_referencia"],
 ...         dus_alvo=df["dias_uteis"],
+...         datas_curva=df_curva["data_referencia"],
 ...         dus_curva=df_curva["dias_uteis"],
 ...         taxas_curva=df_curva["taxa"],
-...         datas_alvo=df["data_referencia"],
-...         datas_curva=df_curva["data_referencia"],
+...         metodo="flat_forward",
 ...     )
 ... )
 shape: (2, 3)
@@ -3365,22 +3422,6 @@ shape: (2, 3)
 │ 2025-01-02      ┆ 10         ┆ 0.113293 │
 │ 2025-01-02      ┆ 25         ┆ 0.123323 │
 └─────────────────┴────────────┴──────────┘
-```
-
-Curva única (sem datas):
-
-```pycon
->>> yd.interpolar(
-...     dus_alvo=pl.Series([10, 25]),
-...     dus_curva=pl.Series([5, 20, 50]),
-...     taxas_curva=pl.Series([0.10, 0.12, 0.13]),
-... )
-shape: (2,)
-Series: 'taxa_interpolada' [f64]
-[
-    0.113293
-    0.123323
-]
 ```
 
 # IPCA
@@ -5053,7 +5094,7 @@ A curva retornada contém apenas os vencimentos informados. Para estimar uma tax
 ...     vencimentos=df["data_vencimento"],
 ...     taxas=df["taxa_indicativa"],
 ... )
->>> interpolar = yd.Interpolador(
+>>> flat_forward = yd.Interpolador(
 ...     curva_decimal["dias_uteis"],
 ...     curva_decimal["taxa_zero"],
 ...     metodo="flat_forward",
@@ -5061,7 +5102,7 @@ A curva retornada contém apenas os vencimentos informados. Para estimar uma tax
 >>> du_intermediario = (
 ...     curva_decimal["dias_uteis"][0] + curva_decimal["dias_uteis"][1]
 ... ) // 2
->>> 0 < interpolar(du_intermediario) < 1
+>>> 0 < flat_forward(du_intermediario) < 1
 True
 ```
 
@@ -7081,15 +7122,23 @@ Consulte as páginas de [LFT](<https://crdcj.github.io/PYield/lft/index.md>), [L
 `Interpolador` usa a convenção de 252 dias úteis por ano e oferece os métodos `flat_forward` e `linear`:
 
 ```python
-interp = yd.Interpolador(
+flat_forward = yd.Interpolador(
     [30, 60, 90],
     [0.045, 0.050, 0.055],
     metodo="flat_forward",
 )
 
-interp(45)
+flat_forward(45)
 # 0.04833...
 ```
+
+Para vários prazos de uma vez, passe uma sequência; os prazos sem taxa (negativos ou além do último vértice, sem extrapolação) ficam nulos:
+
+```python
+flat_forward([15, 45, 100])
+```
+
+A chamada direta é o atalho do método `interpolar`: `flat_forward.interpolar(45)` devolve o mesmo resultado.
 
 Para usar o interpolador em um pipeline Polars, aplique `interpolar_expr`:
 
@@ -7098,11 +7147,11 @@ import polars as pl
 
 df = pl.DataFrame({"dias_uteis": [15, 45, 75]})
 df.with_columns(
-    taxa=interp.interpolar_expr("dias_uteis"),
+    taxa=flat_forward.interpolar_expr("dias_uteis"),
 )
 ```
 
-Quando os pontos-alvo e a curva estão em estruturas diferentes, use `yd.interpolar`. Para calcular uma taxa a termo, use `yd.forward` ou `yd.forwards`.
+Quando cada ponto-alvo usa a curva da sua própria data de referência, use `yd.interpolar`. Para calcular uma taxa a termo, use `yd.forward` ou `yd.forwards`.
 
 ## Indicadores auxiliares
 
@@ -8106,12 +8155,106 @@ Para manter o inteiro `YYYYMM` em código existente:
 df.with_columns(periodo=pl.col("competencia").dt.strftime("%Y%m").cast(pl.Int64))
 ```
 
+# Novidades na versão 0.66.0
+
+Revisão do interpolador. `yd.Interpolador` passa a ser o caminho para uma única curva, inclusive com uma sequência de prazos, e `yd.interpolar` fica dedicada ao cálculo em lote, com uma curva por data de referência. Prazos negativos ficam sem taxa em todos os caminhos e prazos de tipo não inteiro geram erro.
+
+Há duas mudanças incompatíveis, ambas com erro imediato na chamada: `yd.interpolar` exige as datas, o método e parâmetros nomeados, e os prazos devem ter tipo inteiro. As seções abaixo mostram a migração.
+
+## `yd.interpolar` só para lote, com parâmetros nomeados
+
+`yd.interpolar` aceitava dois usos: uma única curva, sem datas, e várias curvas, com `datas_alvo` e `datas_curva`. O primeiro repetia o que `yd.Interpolador` já faz. Agora a função atende apenas ao segundo, que é o seu propósito: interpolar de uma vez os pontos de muitas datas de referência, como no reprocessamento de uma base histórica.
+
+As datas passam a ser obrigatórias e todos os parâmetros são nomeados. São cinco séries, duas de datas e duas de prazos com o mesmo tipo; passadas por posição, uma troca entre alvo e curva não gerava erro, apenas resultado errado.
+
+O método também passa a ser informado em `metodo`, como em `yd.Interpolador`. A função só calculava flat-forward, sem que a chamada dissesse isso; agora o método aparece na chamada, e `"linear"` fica disponível também em lote.
+
+```python
+yd.interpolar(
+    datas_alvo=df["data_referencia"],
+    dus_alvo=df["dias_uteis"],
+    datas_curva=df_curva["data_referencia"],
+    dus_curva=df_curva["dias_uteis"],
+    taxas_curva=df_curva["taxa"],
+    metodo="flat_forward",
+)
+```
+
+Para uma única curva, use `yd.Interpolador`:
+
+```python
+# antes
+yd.interpolar(dus_alvo, dus_curva, taxas_curva, extrapolar=True)
+
+# agora
+flat_forward = yd.Interpolador(dus_curva, taxas_curva, "flat_forward", extrapolar=True)
+flat_forward(dus_alvo)
+```
+
+## Prazo negativo fica sem taxa
+
+`yd.interpolar` devolvia a primeira taxa da curva quando o prazo era negativo, enquanto `yd.Interpolador` já devolvia nulo. Agora os dois devolvem nulo: um prazo negativo não tem taxa.
+
+A mudança alcança `yd.di1.interpolar_taxas` e `yd.di1.interpolar_taxa`, que usam `yd.interpolar`. Um vencimento anterior à data de negociação passa a resultar em nulo na primeira e em `nan` na segunda:
+
+```python
+yd.di1.interpolar_taxas("25-04-2025", ["01-01-2020", "01-01-2027"])
+# antes: [taxa do primeiro vértice, 0.13901]
+# agora: [null, 0.13901]
+```
+
+Como nas demais funções vetoriais da biblioteca, o prazo inválido anula apenas a sua linha; os outros prazos da série continuam calculados.
+
+O mesmo vale para a curva: um vértice com prazo negativo é ignorado, como os vértices nulos. Antes ele entrava no cálculo e alterava as taxas vizinhas; com o alvo no prazo zero, `yd.Interpolador` gerava `ZeroDivisionError` e `yd.interpolar` devolvia `inf`.
+
+## Prazo deve ter tipo inteiro
+
+O prazo em dias úteis é inteiro por definição. `yd.Interpolador` e `yd.interpolar` aceitavam uma coluna float ou de texto e a convertiam em silêncio, truncando a parte fracionária. Um inteiro com ruído de ponto flutuante era lido com um dia a menos: `0.57 * 100` resulta em `56.99999999999999` e virava 56.
+
+Agora os prazos a interpolar e os vértices da curva devem ter tipo inteiro. Outro tipo gera `TypeError`, que informa o parâmetro e o tipo recebido:
+
+```python
+flat_forward = yd.Interpolador([30, 60, 90], [0.045, 0.05, 0.055], "flat_forward")
+flat_forward(pl.Series([45.0, 46.0]))
+# TypeError: du deve ter tipo inteiro, mas tem Float64. Converta os prazos
+# para inteiro antes de interpolar.
+```
+
+A regra é a mesma da chamada com um único valor, que já rejeitava float. O erro aparece antes de qualquer cálculo, e não no meio de um lote. Quem tem prazos em coluna float decide a conversão, porque conhece a origem dos valores:
+
+```python
+df.with_columns(dias_uteis=pl.col("dias_uteis").round().cast(pl.Int64))
+```
+
+Prazos nulos continuam aceitos e resultam em taxa nula, inclusive em uma coluna vazia ou só com nulos. As funções de títulos e `yd.di1` calculam os prazos internamente e não são afetadas.
+
+## Sequência de prazos no `Interpolador`
+
+A instância de `yd.Interpolador` aceita lista, tupla ou `pl.Series`, além do inteiro, e devolve uma Series na ordem da entrada. Prazos nulos, negativos ou além do último vértice sem extrapolação ficam nulos:
+
+```python
+flat_forward = yd.Interpolador([30, 60, 90], [0.045, 0.05, 0.055], "flat_forward")
+flat_forward(45)
+# 0.04833068080970859
+flat_forward([15, 45, 100])
+# [0.045, 0.048331, null]
+```
+
+A chamada direta é o atalho do método `interpolar`, que aceita as mesmas entradas. Com isso, `yd.Interpolador` cobre todos os usos de uma única curva com dois métodos: `interpolar` para inteiro ou sequência e `interpolar_expr` em pipelines Polars.
+
+## Valores retornados
+
+Fora o prazo negativo em `yd.interpolar`, os valores de `yd.Interpolador` e de `yd.interpolar` são os mesmos da 0.65.0. `interpolar` com sequência e `interpolar_expr` dão exatamente a mesma taxa da chamada com inteiro.
+
+As funções de curva zero de NTN-B1 e NTN-C passam a interpolar com `yd.Interpolador`, como as demais funções de títulos. A taxa interpolada de cada fluxo pode mudar no último dígito, na ordem de 1e-15; os valores cobertos pelos testes não mudaram.
+
 # Notas de versão
 
 Cada versão tem uma página com as mudanças, o racional das decisões e as orientações de migração. Consulte também as [releases do GitHub](<https://github.com/crdcj/PYield/releases>) para as publicações.
 
 | Versão | Principais mudanças |
 | --- | --- |
+| [0.66.0](<https://crdcj.github.io/PYield/release-0.66.0/index.md>) | `yd.interpolar` dedicada ao cálculo em lote, com datas e método obrigatórios e parâmetros nomeados; `Interpolador` aceita sequência de prazos; prazo negativo sem taxa e prazo de tipo não inteiro com erro no interpolador. |
 | [0.65.0](<https://crdcj.github.io/PYield/release-0.65.0/index.md>) | Projeção vigente de IPCA e IGP-M pela página de projeções da ANBIMA, com data de coleta e de validade, em `yd.ipca.taxa_projetada` e no novo `yd.igpm.taxa_projetada`; mês de referência das séries mensais como `competencia` (`Date`). |
 | [0.64.1](<https://crdcj.github.io/PYield/release-0.64.1/index.md>) | Timeout de leitura menor na primeira tentativa e dobrado na retentativa, com limites revistos por fonte; correção de `ComputeError` em `yd.cpm.contratos`. |
 | [0.64.0](<https://crdcj.github.io/PYield/release-0.64.0/index.md>) | Fonte explícita em `yd.tpf.leiloes` (`fonte="tn"` ou `fonte="bc"`) e remoção de `yd.tpf.leiloes_bcb`; taxas de `yd.tpf.secundario.mensal` em decimal; `nome_comercial` obrigatório em `yd.ntnb1.dv01`; erro para prazos conflitantes na curva zero e no interpolador; duration sem truncamento; ofertas de compra e venda de `yd.futuro.historico` na convenção da B3; correções em prêmio limpo, curvas zero e leilões. |

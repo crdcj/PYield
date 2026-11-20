@@ -124,15 +124,23 @@ Consulte as páginas de [LFT](<https://crdcj.github.io/PYield/lft/index.md>), [L
 `Interpolador` usa a convenção de 252 dias úteis por ano e oferece os métodos `flat_forward` e `linear`:
 
 ```python
-interp = yd.Interpolador(
+flat_forward = yd.Interpolador(
     [30, 60, 90],
     [0.045, 0.050, 0.055],
     metodo="flat_forward",
 )
 
-interp(45)
+flat_forward(45)
 # 0.04833...
 ```
+
+Para vários prazos de uma vez, passe uma sequência; os prazos sem taxa (negativos ou além do último vértice, sem extrapolação) ficam nulos:
+
+```python
+flat_forward([15, 45, 100])
+```
+
+A chamada direta é o atalho do método `interpolar`: `flat_forward.interpolar(45)` devolve o mesmo resultado.
 
 Para usar o interpolador em um pipeline Polars, aplique `interpolar_expr`:
 
@@ -141,11 +149,11 @@ import polars as pl
 
 df = pl.DataFrame({"dias_uteis": [15, 45, 75]})
 df.with_columns(
-    taxa=interp.interpolar_expr("dias_uteis"),
+    taxa=flat_forward.interpolar_expr("dias_uteis"),
 )
 ```
 
-Quando os pontos-alvo e a curva estão em estruturas diferentes, use `yd.interpolar`. Para calcular uma taxa a termo, use `yd.forward` ou `yd.forwards`.
+Quando cada ponto-alvo usa a curva da sua própria data de referência, use `yd.interpolar`. Para calcular uma taxa a termo, use `yd.forward` ou `yd.forwards`.
 
 ## Indicadores auxiliares
 

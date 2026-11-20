@@ -31,7 +31,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="zensical-0.1.1">
+      <meta name="generator" content="zensical-0.1.2">
     
     
       
@@ -339,6 +339,33 @@
     
   
   Visão geral
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-0.66.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  0.66.0
 
     
   </span>
@@ -2147,11 +2174,14 @@ pelo push de uma tag <code>vX.Y.Z</code>. Localmente, basta preparar a versão:<
    <code>mkdocs.yml</code>, conforme a seção anterior.</p>
 </li>
 <li>
-<p>Faça o commit, crie a tag e envie os dois:</p>
+<p>Faça o commit, crie a tag anotada e envie os dois:</p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>git<span class="w"> </span>commit<span class="w"> </span>-am<span class="w"> </span><span class="s2">"release: X.Y.Z"</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>git<span class="w"> </span>tag<span class="w"> </span>vX.Y.Z
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>vX.Y.Z<span class="w"> </span>-m<span class="w"> </span><span class="s2">"PYield X.Y.Z"</span>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>git<span class="w"> </span>push<span class="w"> </span>--follow-tags
 </span></code></pre></div>
+<p>O <code>--follow-tags</code> envia apenas tags anotadas. Uma tag leve
+(<code>git tag vX.Y.Z</code>) fica só no repositório local, e o workflow não é
+disparado; nesse caso, envie-a com <code>git push origin vX.Y.Z</code>.</p>
 </li>
 </ol>
 <p>O workflow executa, em ordem:</p>
